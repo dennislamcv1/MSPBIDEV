@@ -1,0 +1,136 @@
+
+<div style="font-family: var(--font-sans); padding: 1rem 0;">
+
+  <div style="background: #1A1A2E; color: #fff; padding: 8px 16px; font-size: 12px; border-radius: 6px 6px 0 0; display: flex; align-items: center; gap: 12px;">
+    <div style="background: #FFB900; width: 14px; height: 14px; border-radius: 2px;"></div>
+    <span style="font-weight: 500;">Power BI Service — Deployment Pipelines</span>
+    <span style="margin-left: auto; color: #aaa; font-size: 11px;">Orion Professional Services</span>
+  </div>
+
+  <div style="border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; background: #F7F8FA; overflow: hidden;">
+
+    <div style="background: #fff; border-bottom: 1px solid #eee; padding: 10px 20px; display: flex; align-items: center; gap: 16px;">
+      <span style="font-size: 15px; font-weight: 500; color: #1A1A2E;">Orion Release Pipeline</span>
+      <span style="font-size: 11px; background: #E6F1FB; color: #0052A3; padding: 3px 10px; border-radius: 10px; margin-left: 4px;">Active</span>
+      <div style="margin-left: auto; display: flex; gap: 8px;">
+        <button style="font-size: 12px; padding: 5px 12px; border-radius: 4px; border: 1px solid #ddd; background: #fff; color: #333;">Pipeline settings</button>
+        <button style="font-size: 12px; padding: 5px 12px; border-radius: 4px; border: none; background: #0078D4; color: #fff;">Deploy all</button>
+      </div>
+    </div>
+
+    <div style="padding: 28px 20px; display: flex; align-items: stretch; gap: 0;">
+
+      <!-- DEV STAGE -->
+      <div style="flex: 1; background: #fff; border: 1.5px solid #0078D4; border-radius: 8px; overflow: hidden;">
+        <div style="background: #0078D4; color: #fff; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+          <div style="width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">1</div>
+          <span style="font-weight: 500; font-size: 13px;">Development</span>
+        </div>
+        <div style="padding: 14px;">
+          <div style="font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Assigned workspace</div>
+          <div style="background: #F0F7FF; border: 1px solid #B0D4F1; border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #0052A3; font-weight: 500; margin-bottom: 10px;">
+            📁 Orion – Development
+          </div>
+          <div style="font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Content</div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: #F9F9F9; border-radius: 4px;">
+              <span style="color: #FFB900;">⬛</span> Orion_Performance_Data <span style="font-size: 10px; color: #888; margin-left: auto;">Dataset</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: #F9F9F9; border-radius: 4px;">
+              <span style="color: #0078D4;">📊</span> Orion Performance Report <span style="font-size: 10px; color: #888; margin-left: auto;">Report</span>
+            </div>
+          </div>
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #eee;">
+            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Last updated</div>
+            <div style="font-size: 12px; color: #333;">Today, 09:14 AM</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARROW 1 -->
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 10px; gap: 6px; min-width: 80px;">
+        <div style="font-size: 10px; color: #888; text-align: center; margin-bottom: 4px;">Deploy</div>
+        <div style="width: 100%; height: 2px; background: linear-gradient(to right, #0078D4, #107C10); position: relative;">
+          <div style="position: absolute; right: -1px; top: -5px; width: 0; height: 0; border-left: 8px solid #107C10; border-top: 6px solid transparent; border-bottom: 6px solid transparent;"></div>
+        </div>
+        <div style="font-size: 10px; color: #107C10; font-weight: 500; text-align: center;">Dev → Test</div>
+        <div style="font-size: 10px; background: #EDF7ED; color: #135200; padding: 2px 8px; border-radius: 10px; margin-top: 2px;">✓ Done</div>
+      </div>
+
+      <!-- TEST STAGE -->
+      <div style="flex: 1; background: #fff; border: 1.5px solid #107C10; border-radius: 8px; overflow: hidden;">
+        <div style="background: #107C10; color: #fff; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+          <div style="width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">2</div>
+          <span style="font-weight: 500; font-size: 13px;">Test</span>
+        </div>
+        <div style="padding: 14px;">
+          <div style="font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Assigned workspace</div>
+          <div style="background: #EDF7ED; border: 1px solid #9FD49F; border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #135200; font-weight: 500; margin-bottom: 10px;">
+            📁 Orion – Test
+          </div>
+          <div style="font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Content</div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: #F9F9F9; border-radius: 4px;">
+              <span style="color: #FFB900;">⬛</span> Orion_Performance_Data <span style="font-size: 10px; color: #888; margin-left: auto;">Dataset</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: #F9F9F9; border-radius: 4px;">
+              <span style="color: #0078D4;">📊</span> Orion Performance Report <span style="font-size: 10px; color: #888; margin-left: auto;">Report</span>
+            </div>
+          </div>
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #eee;">
+            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Last updated</div>
+            <div style="font-size: 12px; color: #333;">Today, 09:31 AM</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARROW 2 -->
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 10px; gap: 6px; min-width: 80px;">
+        <div style="font-size: 10px; color: #888; text-align: center; margin-bottom: 4px;">Deploy</div>
+        <div style="width: 100%; height: 2px; background: linear-gradient(to right, #107C10, #5C2D91); position: relative;">
+          <div style="position: absolute; right: -1px; top: -5px; width: 0; height: 0; border-left: 8px solid #5C2D91; border-top: 6px solid transparent; border-bottom: 6px solid transparent;"></div>
+        </div>
+        <div style="font-size: 10px; color: #5C2D91; font-weight: 500; text-align: center;">Test → Prod</div>
+        <div style="font-size: 10px; background: #F3EDF9; color: #3B1A6B; padding: 2px 8px; border-radius: 10px; margin-top: 2px;">✓ Done</div>
+      </div>
+
+      <!-- PROD STAGE -->
+      <div style="flex: 1; background: #fff; border: 1.5px solid #5C2D91; border-radius: 8px; overflow: hidden;">
+        <div style="background: #5C2D91; color: #fff; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+          <div style="width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">3</div>
+          <span style="font-weight: 500; font-size: 13px;">Production</span>
+        </div>
+        <div style="padding: 14px;">
+          <div style="font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Assigned workspace</div>
+          <div style="background: #F3EDF9; border: 1px solid #C9A9E8; border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #3B1A6B; font-weight: 500; margin-bottom: 10px;">
+            📁 Orion – Production
+          </div>
+          <div style="font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Content</div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: #F9F9F9; border-radius: 4px;">
+              <span style="color: #FFB900;">⬛</span> Orion_Performance_Data <span style="font-size: 10px; color: #888; margin-left: auto;">Dataset</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: #F9F9F9; border-radius: 4px;">
+              <span style="color: #0078D4;">📊</span> Orion Performance Report <span style="font-size: 10px; color: #888; margin-left: auto;">Report</span>
+            </div>
+          </div>
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #eee;">
+            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Last updated</div>
+            <div style="font-size: 12px; color: #333;">Today, 09:47 AM</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="background: #fff; padding: 8px 20px; border-top: 1px solid #eee; font-size: 11px; color: #888; display: flex; gap: 20px;">
+      <span>Pipeline created: 30 Apr 2026</span>
+      <span>|</span>
+      <span>Stages: 3 (Development, Test, Production)</span>
+      <span>|</span>
+      <span style="color: #107C10; font-weight: 500;">● All stages in sync</span>
+    </div>
+  </div>
+
+  <div style="margin-top: 8px; font-size: 11px; color: var(--color-text-secondary); text-align: center;">Screenshot 1 — Deployment pipeline configuration showing all three stages assigned</div>
+</div>

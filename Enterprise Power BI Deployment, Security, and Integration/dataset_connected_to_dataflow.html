@@ -1,0 +1,156 @@
+
+<div style="font-family: var(--font-sans); padding: 1rem 0;">
+
+  <div style="background: #1A1A2E; color: #fff; padding: 8px 16px; font-size: 12px; border-radius: 6px 6px 0 0; display: flex; align-items: center; gap: 12px;">
+    <div style="background: #FFB900; width: 14px; height: 14px; border-radius: 2px;"></div>
+    <span style="font-weight: 500;">Power BI Desktop — Power Query Editor</span>
+    <span style="margin-left: auto; color: #aaa; font-size: 11px;">Data source: Power BI Dataflow</span>
+  </div>
+
+  <div style="border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; background: #fff;">
+
+    <div style="background: #F3F3F3; border-bottom: 1px solid #ddd; padding: 6px 14px; display: flex; align-items: center; gap: 14px; font-size: 12px; color: #444;">
+      <span style="font-weight: 500; color: #0078D4;">Home</span>
+      <span>Transform</span>
+      <span>Add Column</span>
+      <span>View</span>
+      <div style="margin-left: auto; display: flex; gap: 6px;">
+        <button style="font-size: 11px; padding: 4px 12px; border: 1px solid #ddd; border-radius: 4px; background: #fff;">Refresh</button>
+        <button style="font-size: 11px; padding: 4px 12px; border: none; background: #0078D4; color: #fff; border-radius: 4px;">Close &amp; Apply</button>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 0;">
+
+      <!-- Queries list -->
+      <div style="width: 180px; border-right: 1px solid #ddd; background: #FAFAFA; padding: 10px 0; flex-shrink: 0; min-height: 420px;">
+        <div style="font-size: 10px; color: #888; padding: 0 12px 6px; text-transform: uppercase; letter-spacing: 0.5px;">Queries (1)</div>
+        <div style="background: #E8F0FB; border-left: 3px solid #0078D4; padding: 7px 12px; font-size: 12px; color: #0052A3; font-weight: 500;">
+          Orion_Performance
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <div style="flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 18px;">
+
+        <!-- Connection info card -->
+        <div style="background: #F0F7FF; border: 1px solid #B0D4F1; border-radius: 8px; padding: 16px 18px;">
+          <div style="font-size: 12px; font-weight: 500; color: #0052A3; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <span>🔗</span> Data source connection
+          </div>
+          <div style="display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 12px;">
+            <span style="color: #888;">Source type</span>
+            <span style="color: #333; font-weight: 500;">Power BI Dataflow</span>
+            <span style="color: #888;">Workspace</span>
+            <span style="color: #333;">Orion – Development</span>
+            <span style="color: #888;">Dataflow name</span>
+            <span style="color: #0078D4; font-weight: 500;">Orion_Performance_Dataflow</span>
+            <span style="color: #888;">Entity / table</span>
+            <span style="color: #333;">Orion_Performance</span>
+            <span style="color: #888;">Connection mode</span>
+            <span style="color: #333;">Import</span>
+          </div>
+        </div>
+
+        <!-- Transformation lineage summary -->
+        <div>
+          <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Transformation lineage from dataflow</div>
+          <div style="display: flex; align-items: center; gap: 0; flex-wrap: nowrap; overflow-x: auto;">
+
+            <div style="background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; text-align: center; min-width: 130px; flex-shrink: 0;">
+              <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Source</div>
+              <div style="font-size: 12px; font-weight: 500; color: #333;">Excel Workbook</div>
+              <div style="font-size: 10px; color: #aaa; margin-top: 2px;">Orion_Performance_Data.xlsx</div>
+            </div>
+
+            <div style="padding: 0 6px; color: #0078D4; font-size: 16px; flex-shrink: 0;">→</div>
+
+            <div style="background: #FFFBE6; border: 1px solid #FFD54F; border-radius: 6px; padding: 10px 14px; text-align: center; min-width: 155px; flex-shrink: 0;">
+              <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Dataflow</div>
+              <div style="font-size: 12px; font-weight: 500; color: #5C4A00;">Orion_Performance_Dataflow</div>
+              <div style="font-size: 10px; color: #7A5C00; margin-top: 2px;">3 transforms applied</div>
+            </div>
+
+            <div style="padding: 0 6px; color: #0078D4; font-size: 16px; flex-shrink: 0;">→</div>
+
+            <div style="background: #EDF7ED; border: 1px solid #9FD49F; border-radius: 6px; padding: 10px 14px; text-align: center; min-width: 130px; flex-shrink: 0;">
+              <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Dataset table</div>
+              <div style="font-size: 12px; font-weight: 500; color: #135200;">Orion_Performance</div>
+              <div style="font-size: 10px; color: #1A7A1A; margin-top: 2px;">120 rows · 8 columns</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Refresh history -->
+        <div>
+          <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Refresh history — dataset uses dataflow output</div>
+          <div style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
+            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #F5F5F5; border-bottom: 1px solid #ddd;">
+                  <th style="text-align: left; padding: 8px 12px; font-weight: 500; color: #555; font-size: 11px;">Refresh time</th>
+                  <th style="text-align: left; padding: 8px 12px; font-weight: 500; color: #555; font-size: 11px;">Source</th>
+                  <th style="text-align: left; padding: 8px 12px; font-weight: 500; color: #555; font-size: 11px;">Rows loaded</th>
+                  <th style="text-align: left; padding: 8px 12px; font-weight: 500; color: #555; font-size: 11px;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid #F5F5F5;">
+                  <td style="padding: 8px 12px; color: #333;">30 Apr 2026, 10:02 AM</td>
+                  <td style="padding: 8px 12px; color: #0078D4;">Orion_Performance_Dataflow</td>
+                  <td style="padding: 8px 12px; color: #333;">120</td>
+                  <td style="padding: 8px 12px;"><span style="background: #EDF7ED; color: #135200; padding: 2px 8px; border-radius: 10px; font-size: 11px;">✓ Completed</span></td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; color: #333;">30 Apr 2026, 09:14 AM</td>
+                  <td style="padding: 8px 12px; color: #0078D4;">Orion_Performance_Dataflow</td>
+                  <td style="padding: 8px 12px; color: #333;">120</td>
+                  <td style="padding: 8px 12px;"><span style="background: #EDF7ED; color: #135200; padding: 2px 8px; border-radius: 10px; font-size: 11px;">✓ Completed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="background: #F0F7FF; border: 1px solid #B0D4F1; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #0052A3; display: flex; align-items: center; gap: 8px;">
+          <span>✓</span>
+          <span>Dataset is fully connected to the dataflow. All future refreshes will pull transformed data from <strong style="font-weight: 500;">Orion_Performance_Dataflow</strong> in the Development workspace.</span>
+        </div>
+
+      </div>
+
+      <!-- Applied Steps right panel -->
+      <div style="width: 190px; border-left: 1px solid #ddd; background: #FAFAFA; flex-shrink: 0; padding: 10px 0;">
+        <div style="font-size: 10px; color: #888; padding: 0 12px 6px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; margin-bottom: 6px;">Applied Steps</div>
+
+        <div style="padding: 7px 12px; border-bottom: 1px solid #F0F0F0; font-size: 12px; display: flex; align-items: flex-start; gap: 6px;">
+          <span style="color: #0078D4; margin-top: 2px;">●</span>
+          <div>
+            <div style="font-weight: 500; color: #333;">Source</div>
+            <div style="font-size: 10px; color: #888;">Power BI Dataflow</div>
+          </div>
+        </div>
+
+        <div style="padding: 7px 12px; border-bottom: 1px solid #F0F0F0; font-size: 12px; display: flex; align-items: flex-start; gap: 6px;">
+          <span style="color: #0078D4; margin-top: 2px;">●</span>
+          <div>
+            <div style="font-weight: 500; color: #333;">Navigation</div>
+            <div style="font-size: 10px; color: #888;">Entity: Orion_Performance</div>
+          </div>
+        </div>
+
+        <div style="padding: 7px 12px; font-size: 12px; background: #EBF3FB; border-left: 3px solid #0078D4; display: flex; align-items: flex-start; gap: 6px;">
+          <span style="color: #0078D4; margin-top: 2px;">●</span>
+          <div>
+            <div style="font-weight: 500; color: #0052A3;">Changed Type</div>
+            <div style="font-size: 10px; color: #0078D4;">Final column types set</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="margin-top: 8px; font-size: 11px; color: var(--color-text-secondary); text-align: center;">Screenshot 2 — Power BI Desktop dataset connected to the dataflow as its data source</div>
+</div>

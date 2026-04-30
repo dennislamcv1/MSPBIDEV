@@ -1,0 +1,155 @@
+
+<div style="font-family: var(--font-sans); padding: 1rem 0;">
+
+  <div style="background: #1A1A2E; color: #fff; padding: 8px 16px; font-size: 12px; border-radius: 6px 6px 0 0; display: flex; align-items: center; gap: 12px;">
+    <div style="background: #FFB900; width: 14px; height: 14px; border-radius: 2px;"></div>
+    <span style="font-weight: 500;">Power BI Service — Workspace Access Settings</span>
+    <span style="margin-left: auto; color: #aaa; font-size: 11px;">Orion – Production</span>
+  </div>
+
+  <div style="border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; background: #fff; overflow: hidden;">
+
+    <!-- Breadcrumb -->
+    <div style="background: #F5F5F5; border-bottom: 1px solid #ddd; padding: 8px 20px; font-size: 12px; color: #555; display: flex; align-items: center; gap: 6px;">
+      <span>Workspaces</span><span>›</span><span>Orion – Production</span><span>›</span><span style="color: #0078D4; font-weight: 500;">Manage access</span>
+    </div>
+
+    <div style="display: flex; min-height: 420px;">
+
+      <!-- Left nav -->
+      <div style="width: 180px; border-right: 1px solid #eee; background: #FAFAFA; padding: 12px 0; flex-shrink: 0;">
+        <div style="padding: 8px 16px; font-size: 12px; color: #888;">Workspace settings</div>
+        <div style="padding: 8px 16px; font-size: 12px; color: #444; border-left: 3px solid transparent;">General</div>
+        <div style="padding: 8px 16px; font-size: 12px; font-weight: 500; color: #0078D4; background: #EBF3FB; border-left: 3px solid #0078D4;">Manage access</div>
+        <div style="padding: 8px 16px; font-size: 12px; color: #444; border-left: 3px solid transparent;">Premium</div>
+        <div style="padding: 8px 16px; font-size: 12px; color: #444; border-left: 3px solid transparent;">Notifications</div>
+      </div>
+
+      <!-- Main content -->
+      <div style="flex: 1; padding: 20px 24px;">
+        <div style="font-size: 15px; font-weight: 500; color: #1A1A2E; margin-bottom: 4px;">Manage access — Orion – Production</div>
+        <div style="font-size: 12px; color: #888; margin-bottom: 20px;">Assign workspace roles. Roles determine what members can see and do within this workspace.</div>
+
+        <!-- Role legend -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
+          <div style="background: #FDECEC; border: 1px solid #F7C1C1; border-radius: 6px; padding: 8px 10px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 500; color: #A32D2D;">Admin</div>
+            <div style="font-size: 10px; color: #791F1F; margin-top: 2px;">Full control</div>
+          </div>
+          <div style="background: #FFF4E0; border: 1px solid #FAC775; border-radius: 6px; padding: 8px 10px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 500; color: #854F0B;">Member</div>
+            <div style="font-size: 10px; color: #633806; margin-top: 2px;">Edit &amp; publish</div>
+          </div>
+          <div style="background: #EDF7ED; border: 1px solid #9FD49F; border-radius: 6px; padding: 8px 10px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 500; color: #135200;">Contributor</div>
+            <div style="font-size: 10px; color: #27500A; margin-top: 2px;">Create content</div>
+          </div>
+          <div style="background: #F3EDF9; border: 1px solid #C9A9E8; border-radius: 6px; padding: 8px 10px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 500; color: #3B1A6B;">Viewer</div>
+            <div style="font-size: 10px; color: #26215C; margin-top: 2px;">Read only</div>
+          </div>
+        </div>
+
+        <!-- Add user bar -->
+        <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+          <input type="text" placeholder="Search by name or email..." style="flex: 1; font-size: 12px;" />
+          <select style="font-size: 12px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; color: #333; background: #fff;">
+            <option>Select role</option>
+            <option>Admin</option>
+            <option>Member</option>
+            <option>Contributor</option>
+            <option>Viewer</option>
+          </select>
+          <button style="font-size: 12px; background: #0078D4; color: #fff; border: none; padding: 6px 14px; border-radius: 4px;">Add</button>
+        </div>
+
+        <!-- Members table -->
+        <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+          <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #F5F5F5; border-bottom: 1px solid #ddd;">
+                <th style="text-align: left; padding: 9px 14px; font-weight: 500; color: #555; font-size: 11px;">Name</th>
+                <th style="text-align: left; padding: 9px 14px; font-weight: 500; color: #555; font-size: 11px;">Email</th>
+                <th style="text-align: left; padding: 9px 14px; font-weight: 500; color: #555; font-size: 11px;">Role</th>
+                <th style="text-align: left; padding: 9px 14px; font-weight: 500; color: #555; font-size: 11px;">Access type</th>
+                <th style="padding: 9px 14px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <tr style="border-bottom: 1px solid #F5F5F5;">
+                <td style="padding: 10px 14px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #A32D2D; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; flex-shrink: 0;">AL</div>
+                    <span style="font-weight: 500; color: #333;">Amara Lim</span>
+                  </div>
+                </td>
+                <td style="padding: 10px 14px; color: #666;">a.lim@orionps.com</td>
+                <td style="padding: 10px 14px;"><span style="background: #FDECEC; color: #A32D2D; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500;">Admin</span></td>
+                <td style="padding: 10px 14px; color: #888; font-size: 11px;">Direct</td>
+                <td style="padding: 10px 14px; text-align: right; color: #aaa; font-size: 12px; cursor: pointer;">⋯</td>
+              </tr>
+
+              <tr style="border-bottom: 1px solid #F5F5F5; background: #FAFAFA;">
+                <td style="padding: 10px 14px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #854F0B; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; flex-shrink: 0;">DM</div>
+                    <span style="font-weight: 500; color: #333;">David Mensah</span>
+                  </div>
+                </td>
+                <td style="padding: 10px 14px; color: #666;">d.mensah@orionps.com</td>
+                <td style="padding: 10px 14px;"><span style="background: #FFF4E0; color: #854F0B; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500;">Member</span></td>
+                <td style="padding: 10px 14px; color: #888; font-size: 11px;">Direct</td>
+                <td style="padding: 10px 14px; text-align: right; color: #aaa; font-size: 12px; cursor: pointer;">⋯</td>
+              </tr>
+
+              <tr style="border-bottom: 1px solid #F5F5F5;">
+                <td style="padding: 10px 14px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #135200; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; flex-shrink: 0;">JR</div>
+                    <span style="font-weight: 500; color: #333;">James Reyes</span>
+                  </div>
+                </td>
+                <td style="padding: 10px 14px; color: #666;">j.reyes@orionps.com</td>
+                <td style="padding: 10px 14px;"><span style="background: #EDF7ED; color: #135200; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500;">Contributor</span></td>
+                <td style="padding: 10px 14px; color: #888; font-size: 11px;">Direct</td>
+                <td style="padding: 10px 14px; text-align: right; color: #aaa; font-size: 12px; cursor: pointer;">⋯</td>
+              </tr>
+
+              <tr style="border-bottom: 1px solid #F5F5F5; background: #FAFAFA;">
+                <td style="padding: 10px 14px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #3B1A6B; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; flex-shrink: 0;">RC</div>
+                    <span style="font-weight: 500; color: #333;">Rachel Chen</span>
+                  </div>
+                </td>
+                <td style="padding: 10px 14px; color: #666;">r.chen@orionps.com</td>
+                <td style="padding: 10px 14px;"><span style="background: #F3EDF9; color: #3B1A6B; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500;">Viewer</span></td>
+                <td style="padding: 10px 14px; color: #888; font-size: 11px;">Direct</td>
+                <td style="padding: 10px 14px; text-align: right; color: #aaa; font-size: 12px; cursor: pointer;">⋯</td>
+              </tr>
+
+              <tr>
+                <td style="padding: 10px 14px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #3B1A6B; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; flex-shrink: 0;">MB</div>
+                    <span style="font-weight: 500; color: #333;">Marcus Blake</span>
+                  </div>
+                </td>
+                <td style="padding: 10px 14px; color: #666;">m.blake@orionps.com</td>
+                <td style="padding: 10px 14px;"><span style="background: #F3EDF9; color: #3B1A6B; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500;">Viewer</span></td>
+                <td style="padding: 10px 14px; color: #888; font-size: 11px;">Direct</td>
+                <td style="padding: 10px 14px; text-align: right; color: #aaa; font-size: 12px; cursor: pointer;">⋯</td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 12px; font-size: 11px; color: #888;">5 members · Last updated 30 Apr 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 8px; font-size: 11px; color: var(--color-text-secondary); text-align: center;">Screenshot 1 — Workspace access settings showing Admin, Member, Contributor, and Viewer roles assigned</div>
+</div>
