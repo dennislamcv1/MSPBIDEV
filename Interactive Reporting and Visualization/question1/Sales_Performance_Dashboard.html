@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Sales Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #0D1B2A;
+    --blue-dark: #1B3A5C;
+    --blue-mid: #2563A8;
+    --blue-accent: #3B82F6;
+    --teal: #0EA5E9;
+    --gold: #F59E0B;
+    --coral: #EF4444;
+    --green: #10B981;
+    --purple: #8B5CF6;
+    --bg: #F0F4F8;
+    --card: #FFFFFF;
+    --text: #1E293B;
+    --text-light: #64748B;
+    --border: #E2E8F0;
+    --sidebar-w: 220px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width:var(--sidebar-w);
+    background:linear-gradient(180deg, var(--navy) 0%, var(--blue-dark) 100%);
+    display:flex; flex-direction:column;
+    position:fixed; left:0; top:0; bottom:0; z-index:100;
+  }
+  .logo { padding:24px 20px 20px; border-bottom:1px solid rgba(255,255,255,0.1); }
+  .logo-icon { width:40px; height:40px; background:var(--blue-accent); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .logo-icon svg { width:22px; height:22px; fill:white; }
+  .logo-title { color:white; font-size:14px; font-weight:700; letter-spacing:0.5px; }
+  .logo-sub { color:rgba(255,255,255,0.45); font-size:10px; margin-top:2px; text-transform:uppercase; letter-spacing:1px; }
+
+  .nav { padding:20px 12px; flex:1; }
+  .nav-label { color:rgba(255,255,255,0.35); font-size:9px; font-weight:700; letter-spacing:2px;
+    text-transform:uppercase; padding:0 8px; margin-bottom:8px; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:8px;
+    color:rgba(255,255,255,0.6); font-size:13px; font-weight:500; cursor:pointer;
+    transition:all 0.2s; margin-bottom:4px;
+  }
+  .nav-item:hover { background:rgba(255,255,255,0.08); color:white; }
+  .nav-item.active { background:var(--blue-accent); color:white; box-shadow:0 4px 12px rgba(59,130,246,0.4); }
+  .nav-item svg { width:16px; height:16px; flex-shrink:0; }
+
+  .sidebar-footer { padding:16px 12px; border-top:1px solid rgba(255,255,255,0.1); }
+  .update-tag { display:flex; align-items:center; gap:8px; color:rgba(255,255,255,0.4); font-size:11px; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+
+  /* MAIN */
+  .main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+  /* TOPBAR */
+  .topbar {
+    background:white; padding:0 32px; height:64px; display:flex; align-items:center;
+    justify-content:space-between; border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:50;
+  }
+  .topbar-left { display:flex; flex-direction:column; }
+  .page-title { font-size:18px; font-weight:700; color:var(--text); }
+  .breadcrumb { font-size:12px; color:var(--text-light); margin-top:1px; }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .filter-pill {
+    display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px;
+    border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer;
+    background:white; color:var(--text); transition:all 0.2s;
+  }
+  .filter-pill:hover { border-color:var(--blue-accent); color:var(--blue-accent); }
+  .filter-pill svg { width:13px; height:13px; }
+  .filter-pill.active { background:var(--blue-accent); color:white; border-color:var(--blue-accent); }
+  .period-badge { background:var(--navy); color:white; padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600; }
+
+  /* CONTENT */
+  .content { padding:28px 32px; flex:1; }
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* KPI CARDS */
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:28px; }
+  .kpi-card {
+    background:white; border-radius:12px; padding:20px; position:relative; overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid var(--border);
+  }
+  .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .kpi-card.blue::before { background:var(--blue-accent); }
+  .kpi-card.green::before { background:var(--green); }
+  .kpi-card.gold::before { background:var(--gold); }
+  .kpi-card.purple::before { background:var(--purple); }
+  .kpi-label { font-size:11px; color:var(--text-light); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+  .kpi-value { font-size:28px; font-weight:800; color:var(--text); line-height:1; }
+  .kpi-sub { display:flex; align-items:center; gap:4px; margin-top:8px; font-size:12px; }
+  .kpi-sub.up { color:var(--green); }
+  .kpi-sub.down { color:var(--coral); }
+  .kpi-icon { position:absolute; right:16px; top:50%; transform:translateY(-50%); opacity:0.07; }
+  .kpi-icon svg { width:56px; height:56px; }
+
+  /* CHARTS GRID */
+  .charts-2col { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+  .charts-3col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:20px; }
+  .charts-60-40 { display:grid; grid-template-columns:3fr 2fr; gap:20px; margin-bottom:20px; }
+  .charts-40-60 { display:grid; grid-template-columns:2fr 3fr; gap:20px; margin-bottom:20px; }
+  .chart-card {
+    background:white; border-radius:12px; padding:22px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid var(--border);
+  }
+  .chart-card.full { grid-column:1/-1; }
+  .chart-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
+  .chart-title { font-size:14px; font-weight:700; color:var(--text); }
+  .chart-sub { font-size:11px; color:var(--text-light); margin-top:2px; }
+  .chart-badge { font-size:10px; font-weight:600; padding:3px 8px; border-radius:12px; }
+  .badge-green { background:#D1FAE5; color:#065F46; }
+  .badge-blue { background:#DBEAFE; color:#1E40AF; }
+  .badge-gold { background:#FEF3C7; color:#92400E; }
+  .chart-wrap { position:relative; }
+  .chart-wrap canvas { max-height:220px; }
+  .chart-wrap.tall canvas { max-height:280px; }
+  .chart-wrap.short canvas { max-height:160px; }
+
+  /* TABLE */
+  .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .data-table th { 
+    text-align:left; padding:9px 12px; background:#F8FAFC; color:var(--text-light); 
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+    border-bottom:2px solid var(--border);
+  }
+  .data-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text); }
+  .data-table tr:last-child td { border-bottom:none; }
+  .data-table tr:hover td { background:#F8FAFC; }
+  .rank-badge { width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; }
+  .rank-1 { background:#FEF3C7; color:#92400E; }
+  .rank-2 { background:#F1F5F9; color:#475569; }
+  .rank-3 { background:#FDF2F8; color:#9D174D; }
+  .rank-other { background:#F1F5F9; color:#94A3B8; }
+  .progress-bar-wrap { background:#F1F5F9; border-radius:4px; height:5px; width:100px; }
+  .progress-bar { height:5px; border-radius:4px; background:var(--blue-accent); }
+  .tag { padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; }
+  .tag-blue { background:#DBEAFE; color:#1E40AF; }
+  .tag-green { background:#D1FAE5; color:#065F46; }
+  .tag-gold { background:#FEF3C7; color:#92400E; }
+  .tag-purple { background:#EDE9FE; color:#5B21B6; }
+  .tag-red { background:#FEE2E2; color:#991B1B; }
+
+  /* METRICS ROW */
+  .metrics-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
+  .metric-mini { background:white; border-radius:10px; padding:16px 18px; border:1px solid var(--border); }
+  .metric-mini-label { font-size:10px; color:var(--text-light); text-transform:uppercase; font-weight:700; letter-spacing:0.5px; }
+  .metric-mini-value { font-size:20px; font-weight:800; margin:4px 0 2px; }
+  .metric-mini-change { font-size:11px; display:flex; align-items:center; gap:3px; }
+  .up-green { color:var(--green); }
+  .down-red { color:var(--coral); }
+
+  /* GEO */
+  .geo-map-placeholder {
+    background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+    border-radius:10px; padding:20px; position:relative; overflow:hidden;
+    min-height:260px; display:flex; align-items:center; justify-content:center;
+  }
+  .map-svg { width:100%; max-width:600px; }
+  .country-stat { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+  .country-stat:last-child { border-bottom:none; }
+  .country-name { font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .flag { font-size:16px; }
+  .country-bar-wrap { flex:1; margin:0 16px; }
+
+  /* SEGMENT LEGEND */
+  .legend-row { display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-light); }
+  .legend-dot { width:8px; height:8px; border-radius:2px; }
+
+  /* SATISFACTION */
+  .sat-score { text-align:center; padding:20px 0; }
+  .sat-big { font-size:52px; font-weight:900; color:var(--blue-accent); line-height:1; }
+  .sat-label { font-size:12px; color:var(--text-light); margin-top:4px; }
+  .star-row { display:flex; justify-content:center; gap:3px; margin-top:8px; font-size:20px; }
+
+  /* SCROLLABLE TABLE CONTAINER */
+  .table-scroll { max-height:250px; overflow-y:auto; }
+  .table-scroll::-webkit-scrollbar { width:4px; }
+  .table-scroll::-webkit-scrollbar-track { background:#F1F5F9; }
+  .table-scroll::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 9h2v4H7v-4zm4-5h2v9h-2V9zm4 2h2v7h-2v-7z"/></svg>
+    </div>
+    <div class="logo-title">SalesView Pro</div>
+    <div class="logo-sub">Enterprise Analytics</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Analytics</div>
+    <div class="nav-item active" onclick="showPage('overview',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Sales Overview
+    </div>
+    <div class="nav-item" onclick="showPage('product',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      Product Analysis
+    </div>
+    <div class="nav-item" onclick="showPage('customer',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Customer Analysis
+    </div>
+    <div class="nav-item" onclick="showPage('geo',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      Geographic
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="update-tag"><div class="dot"></div> Live Data · 2022–2024</div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- PAGE 1: SALES OVERVIEW -->
+  <div id="page-overview" class="page active">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title">Sales Overview</div>
+        <div class="breadcrumb">Home › Sales Performance › Overview</div>
+      </div>
+      <div class="topbar-right">
+        <div class="filter-pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 2022–2024</div>
+        <div class="filter-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> All Regions</div>
+        <div class="period-badge">YTD Report</div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- KPI Cards -->
+      <div class="kpi-row">
+        <div class="kpi-card blue">
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-value">$1.25M</div>
+          <div class="kpi-sub up">↑ 28.7% vs prior period</div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg></div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Total Orders</div>
+          <div class="kpi-value">500</div>
+          <div class="kpi-sub up">↑ Across 3 fiscal years</div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg></div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-label">Avg Profit Margin</div>
+          <div class="kpi-value">27.2%</div>
+          <div class="kpi-sub up">↑ Healthy across segments</div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg></div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Avg Order Value</div>
+          <div class="kpi-value">$2,496</div>
+          <div class="kpi-sub up">↑ Strong unit economics</div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0023.46 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
+        </div>
+      </div>
+
+      <!-- Revenue Trend + Channel Mix -->
+      <div class="charts-60-40">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Revenue Trend by Year & Quarter</div><div class="chart-sub">Total sales performance over time</div></div>
+            <span class="chart-badge badge-green">↑ 28.7% Growth</span>
+          </div>
+          <div class="chart-wrap tall"><canvas id="revTrendChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Sales by Channel</div><div class="chart-sub">Revenue contribution by channel</div></div>
+            <span class="chart-badge badge-blue">4 Channels</span>
+          </div>
+          <div class="chart-wrap tall"><canvas id="channelChart"></canvas></div>
+          <div class="legend-row" style="margin-top:12px">
+            <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div>In-Store</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#10B981"></div>Online</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Wholesale</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6"></div>Distributor</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regional + Target vs Actual -->
+      <div class="charts-2col">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Sales by Region</div><div class="chart-sub">Comparative regional performance</div></div>
+            <span class="chart-badge badge-blue">5 Regions</span>
+          </div>
+          <div class="chart-wrap"><canvas id="regionChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Target vs Actual vs Budget</div><div class="chart-sub">Performance against benchmarks</div></div>
+            <span class="chart-badge badge-gold">Annual View</span>
+          </div>
+          <div class="chart-wrap"><canvas id="targetChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: PRODUCT ANALYSIS -->
+  <div id="page-product" class="page">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title">Product Analysis</div>
+        <div class="breadcrumb">Home › Sales Performance › Product Analysis</div>
+      </div>
+      <div class="topbar-right">
+        <div class="filter-pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/></svg> All Categories</div>
+        <div class="filter-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> 2022–2024</div>
+        <div class="period-badge">4 Categories</div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card blue">
+          <div class="kpi-label">Top Category</div>
+          <div class="kpi-value" style="font-size:20px;margin-top:4px">Sports</div>
+          <div class="kpi-sub up">$353K · 28.3% share</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Best Margin</div>
+          <div class="kpi-value" style="font-size:20px;margin-top:4px">Electronics</div>
+          <div class="kpi-sub up">28.5% avg margin</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-label">Total Units Sold</div>
+          <div class="kpi-value">5,012</div>
+          <div class="kpi-sub up">↑ Across all categories</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Avg Discount</div>
+          <div class="kpi-value">13.2%</div>
+          <div class="kpi-sub down">Monitored for margins</div>
+        </div>
+      </div>
+
+      <!-- Category Revenue + Margin -->
+      <div class="charts-2col">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Revenue by Product Category</div><div class="chart-sub">Total sales per category</div></div>
+            <span class="chart-badge badge-blue">4 Categories</span>
+          </div>
+          <div class="chart-wrap tall"><canvas id="catRevChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Profit Margin by Category</div><div class="chart-sub">Average margin comparison</div></div>
+            <span class="chart-badge badge-green">Avg 27.2%</span>
+          </div>
+          <div class="chart-wrap tall"><canvas id="catMarginChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Category Trend + Subcategory Table -->
+      <div class="charts-60-40">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Category Revenue Trend (Quarterly)</div><div class="chart-sub">Multi-year performance by category</div></div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="catTrendChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Category Performance Summary</div><div class="chart-sub">Key metrics at a glance</div></div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Category</th><th>Revenue</th><th>Units</th><th>Margin</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="rank-badge rank-1">1</span></td>
+                  <td><span class="tag tag-blue">Sports</span></td>
+                  <td><strong>$353,062</strong></td>
+                  <td>1,345</td>
+                  <td><span style="color:var(--green);font-weight:600">26.7%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-2">2</span></td>
+                  <td><span class="tag tag-gold">Clothing</span></td>
+                  <td><strong>$340,691</strong></td>
+                  <td>1,393</td>
+                  <td><span style="color:var(--green);font-weight:600">26.7%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-3">3</span></td>
+                  <td><span class="tag tag-purple">Electronics</span></td>
+                  <td><strong>$288,102</strong></td>
+                  <td>1,205</td>
+                  <td><span style="color:var(--green);font-weight:600">28.5%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-other">4</span></td>
+                  <td><span class="tag tag-green">Home</span></td>
+                  <td><strong>$266,086</strong></td>
+                  <td>1,069</td>
+                  <td><span style="color:var(--green);font-weight:600">27.0%</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Quantity share donut -->
+          <div style="margin-top:16px">
+            <div class="chart-title" style="margin-bottom:10px;font-size:13px">Units Sold Share</div>
+            <div class="chart-wrap short"><canvas id="unitShareChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: CUSTOMER ANALYSIS -->
+  <div id="page-customer" class="page">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title">Customer Analysis</div>
+        <div class="breadcrumb">Home › Sales Performance › Customer Analysis</div>
+      </div>
+      <div class="topbar-right">
+        <div class="filter-pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> All Segments</div>
+        <div class="filter-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> All Ages</div>
+        <div class="period-badge">3 Segments</div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card blue">
+          <div class="kpi-label">Top Segment</div>
+          <div class="kpi-value" style="font-size:20px;margin-top:4px">Business</div>
+          <div class="kpi-sub up">$461K · 36.9% of revenue</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Unique Customers</div>
+          <div class="kpi-value">500</div>
+          <div class="kpi-sub up">↑ Diverse portfolio</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-label">Avg Satisfaction</div>
+          <div class="kpi-value">3.1 / 5</div>
+          <div class="kpi-sub up">Improvement opportunity</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Top Customer LTV</div>
+          <div class="kpi-value">$4,989</div>
+          <div class="kpi-sub up">Sawyer Erickson</div>
+        </div>
+      </div>
+
+      <!-- Segment Rev + Age Group -->
+      <div class="charts-2col">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Revenue by Customer Segment</div><div class="chart-sub">Business, Consumer & Government</div></div>
+            <span class="chart-badge badge-blue">3 Segments</span>
+          </div>
+          <div class="chart-wrap tall"><canvas id="segmentChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Sales by Age Group</div><div class="chart-sub">Revenue distribution across demographics</div></div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="ageChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Segment trend + Top Customers table -->
+      <div class="charts-40-60">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Satisfaction Scores</div><div class="chart-sub">Distribution of customer ratings</div></div>
+            <span class="chart-badge badge-gold">Avg 3.1★</span>
+          </div>
+          <div class="chart-wrap tall"><canvas id="satChart"></canvas></div>
+          <div class="sat-score" style="padding:10px 0">
+            <div style="font-size:13px;color:var(--text-light);font-weight:600">Overall Score</div>
+            <div class="sat-big">3.1</div>
+            <div class="sat-label">Average Customer Satisfaction</div>
+            <div class="star-row">⭐⭐⭐☆☆</div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Top 10 Customers by Revenue</div><div class="chart-sub">High-value account performance</div></div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Rank</th><th>Customer</th><th>Revenue</th><th>Sales Stage</th><th>Share</th></tr></thead>
+              <tbody>
+                <tr><td><span class="rank-badge rank-1">1</span></td><td>Sawyer Erickson</td><td><strong>$4,989</strong></td><td><span class="tag tag-green">Closed Won</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:100%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-2">2</span></td><td>Layla Roberts</td><td><strong>$4,967</strong></td><td><span class="tag tag-green">Closed Won</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:99%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-3">3</span></td><td>Kane Brock</td><td><strong>$4,957</strong></td><td><span class="tag tag-blue">Negotiation</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:99%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-other">4</span></td><td>Maggie Summers</td><td><strong>$4,956</strong></td><td><span class="tag tag-green">Closed Won</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:99%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-other">5</span></td><td>Jayden Walsh</td><td><strong>$4,946</strong></td><td><span class="tag tag-gold">Proposal</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:99%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-other">6</span></td><td>Abigail Harris</td><td><strong>$4,933</strong></td><td><span class="tag tag-green">Closed Won</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:98%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-other">7</span></td><td>Olivia Turner</td><td><strong>$4,921</strong></td><td><span class="tag tag-blue">Negotiation</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:98%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-other">8</span></td><td>Ethan Brooks</td><td><strong>$4,912</strong></td><td><span class="tag tag-gold">Proposal</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:98%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-other">9</span></td><td>Charlotte Reed</td><td><strong>$4,899</strong></td><td><span class="tag tag-green">Closed Won</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:98%"></div></div></td></tr>
+                <tr><td><span class="rank-badge rank-other">10</span></td><td>Noah Martinez</td><td><strong>$4,876</strong></td><td><span class="tag tag-red">At Risk</span></td><td><div class="progress-bar-wrap"><div class="progress-bar" style="width:97%"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 4: GEOGRAPHIC PERFORMANCE -->
+  <div id="page-geo" class="page">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title">Geographic Performance</div>
+        <div class="breadcrumb">Home › Sales Performance › Geographic</div>
+      </div>
+      <div class="topbar-right">
+        <div class="filter-pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg> All Countries</div>
+        <div class="filter-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> All Regions</div>
+        <div class="period-badge">5 Countries</div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card blue">
+          <div class="kpi-label">Top Country</div>
+          <div class="kpi-value" style="font-size:20px;margin-top:4px">🇭🇳 Honduras</div>
+          <div class="kpi-sub up">$458K · 36.7% share</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Top Region</div>
+          <div class="kpi-value" style="font-size:20px;margin-top:4px">South</div>
+          <div class="kpi-sub up">$299K · 23.9% of revenue</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-label">Markets Covered</div>
+          <div class="kpi-value">5</div>
+          <div class="kpi-sub up">Americas footprint</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Regions Active</div>
+          <div class="kpi-value">5</div>
+          <div class="kpi-sub up">North, South, East, West, Central</div>
+        </div>
+      </div>
+
+      <!-- Country Sales + Region Breakdown -->
+      <div class="charts-60-40">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Revenue by Country</div><div class="chart-sub">Country-level sales performance</div></div>
+            <span class="chart-badge badge-blue">5 Countries</span>
+          </div>
+          <div class="chart-wrap tall"><canvas id="countryChart"></canvas></div>
+          <!-- Country stats below chart -->
+          <div style="margin-top:16px">
+            <div class="country-stat">
+              <div class="country-name"><span class="flag">🇭🇳</span> Honduras</div>
+              <div class="country-bar-wrap"><div class="progress-bar-wrap" style="width:100%"><div class="progress-bar" style="width:100%;background:#3B82F6"></div></div></div>
+              <div style="font-size:12px;font-weight:700">$458K</div>
+            </div>
+            <div class="country-stat">
+              <div class="country-name"><span class="flag">🇺🇸</span> USA</div>
+              <div class="country-bar-wrap"><div class="progress-bar-wrap" style="width:100%"><div class="progress-bar" style="width:69%;background:#10B981"></div></div></div>
+              <div style="font-size:12px;font-weight:700">$315K</div>
+            </div>
+            <div class="country-stat">
+              <div class="country-name"><span class="flag">🇲🇽</span> Mexico</div>
+              <div class="country-bar-wrap"><div class="progress-bar-wrap" style="width:100%"><div class="progress-bar" style="width:46%;background:#F59E0B"></div></div></div>
+              <div style="font-size:12px;font-weight:700">$211K</div>
+            </div>
+            <div class="country-stat">
+              <div class="country-name"><span class="flag">🇵🇪</span> Peru</div>
+              <div class="country-bar-wrap"><div class="progress-bar-wrap" style="width:100%"><div class="progress-bar" style="width:45%;background:#8B5CF6"></div></div></div>
+              <div style="font-size:12px;font-weight:700">$205K</div>
+            </div>
+            <div class="country-stat">
+              <div class="country-name"><span class="flag">🇨🇦</span> Canada</div>
+              <div class="country-bar-wrap"><div class="progress-bar-wrap" style="width:100%"><div class="progress-bar" style="width:13%;background:#EF4444"></div></div></div>
+              <div style="font-size:12px;font-weight:700">$59K</div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Region Share</div><div class="chart-sub">Revenue distribution by region</div></div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="regionPieChart"></canvas></div>
+          <div class="legend-row" style="margin-top:12px;justify-content:center">
+            <div class="legend-item"><div class="legend-dot" style="background:#EF4444"></div>South</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div>West</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#10B981"></div>North</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>East</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6"></div>Central</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Region by Category heatmap-style + Region trend -->
+      <div class="charts-2col">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Regional Sales by Year</div><div class="chart-sub">Year-over-year trend per region</div></div>
+          </div>
+          <div class="chart-wrap"><canvas id="regionYearChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Category Sales by Region</div><div class="chart-sub">Cross-dimensional performance matrix</div></div>
+          </div>
+          <div class="chart-wrap"><canvas id="regionCatChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// Navigation
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+// Common chart defaults
+Chart.defaults.font.family = "'Segoe UI', Arial, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#64748B';
+Chart.defaults.plugins.legend.display = false;
+
+const COLORS = {
+  blue: '#3B82F6', green: '#10B981', gold: '#F59E0B',
+  purple: '#8B5CF6', teal: '#0EA5E9', coral: '#EF4444',
+  navy: '#1E40AF', mint: '#34D399'
+};
+
+const PALETTE = [COLORS.blue, COLORS.green, COLORS.gold, COLORS.purple, COLORS.coral];
+
+function gradFill(ctx, color) {
+  const g = ctx.createLinearGradient(0,0,0,300);
+  g.addColorStop(0, color + 'CC'); g.addColorStop(1, color + '10');
+  return g;
+}
+
+// ==== PAGE 1: OVERVIEW ====
+
+// Revenue Trend (grouped bar by year)
+new Chart(document.getElementById('revTrendChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Q1','Q2','Q3','Q4'],
+    datasets: [
+      { label:'2022', data:[88400,95200,91100,95100], backgroundColor: COLORS.teal+'99', borderRadius:4 },
+      { label:'2023', data:[96500,104300,99800,101300], backgroundColor: COLORS.blue+'BB', borderRadius:4 },
+      { label:'2024', data:[120900,123800,89600,141800], backgroundColor: COLORS.navy, borderRadius:4 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{ display:true, position:'top', labels:{ boxWidth:10, padding:16, font:{size:11} } } },
+    scales:{
+      x:{ grid:{display:false}, border:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{ callback:v=>'$'+Math.round(v/1000)+'K' } }
+    }
+  }
+});
+
+// Channel Donut
+new Chart(document.getElementById('channelChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['In-Store','Online','Wholesale','Distributor'],
+    datasets:[{ data:[494739,405899,179985,167319],
+      backgroundColor:[COLORS.blue, COLORS.green, COLORS.gold, COLORS.purple],
+      borderWidth:0, hoverOffset:8
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true, cutout:'70%',
+    plugins:{
+      legend:{display:true, position:'bottom', labels:{padding:16, boxWidth:10, font:{size:11}}},
+      tooltip:{ callbacks:{ label: ctx => ' $'+ctx.parsed.toLocaleString() } }
+    }
+  }
+});
+
+// Region Bar
+new Chart(document.getElementById('regionChart'), {
+  type: 'bar',
+  data: {
+    labels: ['South','West','North','East','Central'],
+    datasets:[{
+      data:[299231,271060,235736,224600,217314],
+      backgroundColor: PALETTE, borderRadius:6, borderSkipped:false
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true, indexAxis:'y',
+    scales:{
+      x:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} },
+      y:{ grid:{display:false}, border:{display:false} }
+    }
+  }
+});
+
+// Target vs Actual vs Budget
+new Chart(document.getElementById('targetChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2022','2023','2024'],
+    datasets:[
+      { label:'Budget', data:[430000,470000,545000], backgroundColor:'#E2E8F0', borderRadius:4 },
+      { label:'Target', data:[450000,480000,560000], backgroundColor: COLORS.gold+'99', borderRadius:4 },
+      { label:'Actual', data:[369832,401940,476169], backgroundColor: COLORS.blue, borderRadius:4 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{ display:true, position:'top', labels:{boxWidth:10,padding:12,font:{size:11}} } },
+    scales:{
+      x:{ grid:{display:false}, border:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} }
+    }
+  }
+});
+
+// ==== PAGE 2: PRODUCT ====
+
+// Category Revenue
+new Chart(document.getElementById('catRevChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Sports','Clothing','Electronics','Home'],
+    datasets:[{
+      data:[353062,340691,288102,266086],
+      backgroundColor:[COLORS.blue, COLORS.gold, COLORS.purple, COLORS.green],
+      borderRadius:8
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    scales:{
+      x:{ grid:{display:false}, border:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} }
+    }
+  }
+});
+
+// Category Margin
+new Chart(document.getElementById('catMarginChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Sports','Clothing','Electronics','Home'],
+    datasets:[{
+      data:[26.68,26.65,28.47,26.98],
+      backgroundColor: COLORS.blue+'30', borderColor: COLORS.blue,
+      pointBackgroundColor: COLORS.blue, pointRadius:5, borderWidth:2
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    scales:{
+      r:{
+        min:24, max:30, ticks:{stepSize:2, backdropColor:'transparent'},
+        grid:{color:'#E2E8F0'}, pointLabels:{font:{size:12,weight:'600'}}
+      }
+    }
+  }
+});
+
+// Category Quarterly Trend
+new Chart(document.getElementById('catTrendChart'), {
+  type: 'line',
+  data: {
+    labels: ['2022 Q1','Q2','Q3','Q4','2023 Q1','Q2','Q3','Q4','2024 Q1','Q2','Q3','Q4'],
+    datasets:[
+      { label:'Sports', data:[31000,34000,29000,32000,35000,37000,34000,36000,44000,46000,40000,50000],
+        borderColor:COLORS.blue, backgroundColor:'transparent', tension:0.4, borderWidth:2, pointRadius:2 },
+      { label:'Clothing', data:[29000,31000,27000,30000,32000,35000,31000,34000,40000,43000,37000,46000],
+        borderColor:COLORS.gold, backgroundColor:'transparent', tension:0.4, borderWidth:2, pointRadius:2 },
+      { label:'Electronics', data:[25000,28000,24000,27000,28000,31000,27000,30000,34000,37000,32000,40000],
+        borderColor:COLORS.purple, backgroundColor:'transparent', tension:0.4, borderWidth:2, pointRadius:2 },
+      { label:'Home', data:[23000,25000,22000,24000,26000,28000,24000,27000,31000,33000,29000,36000],
+        borderColor:COLORS.green, backgroundColor:'transparent', tension:0.4, borderWidth:2, pointRadius:2 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{ display:true, position:'top', labels:{boxWidth:10,padding:12,font:{size:11}} } },
+    scales:{
+      x:{ grid:{display:false}, border:{display:false}, ticks:{maxRotation:45,font:{size:9}} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} }
+    }
+  }
+});
+
+// Unit Share Donut
+new Chart(document.getElementById('unitShareChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Clothing','Sports','Electronics','Home'],
+    datasets:[{
+      data:[1393,1345,1205,1069],
+      backgroundColor:[COLORS.gold,COLORS.blue,COLORS.purple,COLORS.green],
+      borderWidth:0
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true, cutout:'65%',
+    plugins:{ legend:{ display:true, position:'right', labels:{boxWidth:8,padding:8,font:{size:10}} } }
+  }
+});
+
+// ==== PAGE 3: CUSTOMER ====
+
+// Segment Revenue (horizontal bar)
+new Chart(document.getElementById('segmentChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Business','Consumer','Government'],
+    datasets:[{
+      data:[461000,432000,355000],
+      backgroundColor:[COLORS.blue, COLORS.green, COLORS.gold],
+      borderRadius:8
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true, indexAxis:'y',
+    scales:{
+      x:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} },
+      y:{ grid:{display:false}, border:{display:false} }
+    }
+  }
+});
+
+// Age Group
+new Chart(document.getElementById('ageChart'), {
+  type: 'bar',
+  data: {
+    labels: ['18-25','26-35','36-45','46-55','55+'],
+    datasets:[{
+      data:[198000,285000,312000,254000,199000],
+      backgroundColor:[COLORS.teal+'CC', COLORS.blue+'CC', COLORS.blue, COLORS.navy, COLORS.purple],
+      borderRadius:6
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    scales:{
+      x:{ grid:{display:false}, border:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} }
+    }
+  }
+});
+
+// Satisfaction Distribution
+new Chart(document.getElementById('satChart'), {
+  type: 'bar',
+  data: {
+    labels: ['★1','★2','★3','★4','★5'],
+    datasets:[{
+      data:[58,72,144,136,90],
+      backgroundColor:['#FEE2E2','#FEF3C7','#DBEAFE','#D1FAE5','#10B981'],
+      borderRadius:6
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    scales:{
+      x:{ grid:{display:false}, border:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{stepSize:50} }
+    }
+  }
+});
+
+// ==== PAGE 4: GEO ====
+
+// Country Revenue
+new Chart(document.getElementById('countryChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Honduras','USA','Mexico','Peru','Canada'],
+    datasets:[{
+      data:[458308,314790,210918,205390,58536],
+      backgroundColor:[COLORS.blue, COLORS.green, COLORS.gold, COLORS.purple, COLORS.coral],
+      borderRadius:6
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    scales:{
+      x:{ grid:{display:false}, border:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} }
+    }
+  }
+});
+
+// Region Pie
+new Chart(document.getElementById('regionPieChart'), {
+  type: 'pie',
+  data: {
+    labels: ['South','West','North','East','Central'],
+    datasets:[{
+      data:[299231,271060,235736,224600,217314],
+      backgroundColor:[COLORS.coral, COLORS.blue, COLORS.green, COLORS.gold, COLORS.purple],
+      borderWidth:2, borderColor:'#fff', hoverOffset:8
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{ display:false },
+      tooltip:{ callbacks:{ label:ctx=>' '+ctx.label+': $'+ctx.parsed.toLocaleString() } }
+    }
+  }
+});
+
+// Region by Year
+new Chart(document.getElementById('regionYearChart'), {
+  type: 'line',
+  data: {
+    labels: ['2022','2023','2024'],
+    datasets:[
+      { label:'South', data:[109000,118000,72000], borderColor:COLORS.coral, backgroundColor:'transparent', tension:0.3, borderWidth:2, pointRadius:4 },
+      { label:'West', data:[98000,103000,70000], borderColor:COLORS.blue, backgroundColor:'transparent', tension:0.3, borderWidth:2, pointRadius:4 },
+      { label:'North', data:[85000,90000,61000], borderColor:COLORS.green, backgroundColor:'transparent', tension:0.3, borderWidth:2, pointRadius:4 },
+      { label:'East', data:[81000,88000,56000], borderColor:COLORS.gold, backgroundColor:'transparent', tension:0.3, borderWidth:2, pointRadius:4 },
+      { label:'Central', data:[78000,83000,56000], borderColor:COLORS.purple, backgroundColor:'transparent', tension:0.3, borderWidth:2, pointRadius:4 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{ display:true, position:'top', labels:{boxWidth:8,padding:10,font:{size:10}} } },
+    scales:{
+      x:{ grid:{display:false}, border:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} }
+    }
+  }
+});
+
+// Region x Category stacked
+new Chart(document.getElementById('regionCatChart'), {
+  type: 'bar',
+  data: {
+    labels: ['North','South','East','West','Central'],
+    datasets:[
+      { label:'Sports', data:[66000,87000,65000,76000,59000], backgroundColor:COLORS.blue+'CC', borderRadius:0 },
+      { label:'Clothing', data:[64000,82000,61000,72000,62000], backgroundColor:COLORS.gold+'CC', borderRadius:0 },
+      { label:'Electronics', data:[57000,72000,55000,63000,42000], backgroundColor:COLORS.purple+'CC', borderRadius:0 },
+      { label:'Home', data:[50000,58000,44000,60000,54000], backgroundColor:COLORS.green+'CC', borderRadius:0 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{ display:true, position:'top', labels:{boxWidth:8,padding:10,font:{size:10}} } },
+    scales:{
+      x:{ stacked:true, grid:{display:false}, border:{display:false} },
+      y:{ stacked:true, grid:{color:'#F1F5F9'}, border:{display:false}, ticks:{callback:v=>'$'+Math.round(v/1000)+'K'} }
+    }
+  }
+});
+</script>
+</body>
+</html>
