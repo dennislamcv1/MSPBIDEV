@@ -1,0 +1,1384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       REPORT PARAMETERS
+       Two parameters as required by Question 5:
+         1. DateRange  — controls the reporting period for all datasets
+         2. RegionSegment — filters data by region or customer segment
+  ═══════════════════════════════════════════════════════════════════ -->
+  <ReportParameters>
+
+    <ReportParameter Name="DateRange">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values><Value>YTD</Value></Values>
+      </DefaultValue>
+      <Prompt>Reporting Period</Prompt>
+      <ValidValues>
+        <ParameterValues>
+          <ParameterValue><Value>YTD</Value><Label>Year to Date (YTD)</Label></ParameterValue>
+          <ParameterValue><Value>LastQuarter</Value><Label>Last Quarter</Label></ParameterValue>
+          <ParameterValue><Value>Last12Months</Value><Label>Last 12 Months</Label></ParameterValue>
+          <ParameterValue><Value>2024</Value><Label>Full Year 2024</Label></ParameterValue>
+          <ParameterValue><Value>2023</Value><Label>Full Year 2023</Label></ParameterValue>
+          <ParameterValue><Value>2022</Value><Label>Full Year 2022</Label></ParameterValue>
+        </ParameterValues>
+      </ValidValues>
+    </ReportParameter>
+
+    <ReportParameter Name="RegionSegment">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values><Value>All</Value></Values>
+      </DefaultValue>
+      <Prompt>Region / Customer Segment</Prompt>
+      <ValidValues>
+        <ParameterValues>
+          <ParameterValue><Value>All</Value><Label>All Regions / All Segments</Label></ParameterValue>
+          <ParameterValue><Value>South</Value><Label>South Region</Label></ParameterValue>
+          <ParameterValue><Value>East</Value><Label>East Region</Label></ParameterValue>
+          <ParameterValue><Value>West</Value><Label>West Region</Label></ParameterValue>
+          <ParameterValue><Value>North</Value><Label>North Region</Label></ParameterValue>
+          <ParameterValue><Value>Business</Value><Label>Business Segment</Label></ParameterValue>
+          <ParameterValue><Value>Consumer</Value><Label>Consumer Segment</Label></ParameterValue>
+          <ParameterValue><Value>Enterprise</Value><Label>Enterprise Segment</Label></ParameterValue>
+        </ParameterValues>
+      </ValidValues>
+    </ReportParameter>
+
+  </ReportParameters>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       DATA SOURCES
+       Replace ConnectString with your actual SQL Server / Power BI
+       Premium dataset connection string before deploying.
+  ═══════════════════════════════════════════════════════════════════ -->
+  <DataSources>
+    <DataSource Name="SalesViewPro">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=YOUR_SERVER;Initial Catalog=SalesViewProDB;Integrated Security=True</ConnectString>
+      </ConnectionProperties>
+      <rd:SecurityType>Integrated</rd:SecurityType>
+    </DataSource>
+  </DataSources>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       DATASETS
+       All datasets accept @DateRange and @RegionSegment parameters.
+       Replace the placeholder SELECT statements with your actual queries.
+  ═══════════════════════════════════════════════════════════════════ -->
+  <DataSets>
+
+    <!-- DS 1: Top-line KPI metrics -->
+    <DataSet Name="DS_KPISummary">
+      <Query>
+        <DataSourceName>SalesViewPro</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@DateRange">
+            <Value>=Parameters!DateRange.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@RegionSegment">
+            <Value>=Parameters!RegionSegment.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>
+          SELECT
+            SUM(s.NetSaleAmount)                          AS TotalRevenue,
+            COUNT(DISTINCT s.OrderID)                     AS TotalOrders,
+            ROUND(SUM(s.NetProfit)/SUM(s.NetSaleAmount)*100,1) AS ProfitMargin,
+            ROUND(SUM(s.NetSaleAmount)/COUNT(DISTINCT s.OrderID),0) AS AvgOrderValue,
+            COUNT(DISTINCT s.CustomerID)                  AS UniqueCustomers,
+            ROUND(AVG(c.SatisfactionScore),1)             AS AvgSatisfaction,
+            MAX(c.TotalRevenue)                           AS TopCustomerLTV,
+            ROUND(AVG(s.DiscountPct)*100,1)               AS AvgDiscountRate
+          FROM Sales s
+          INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+          WHERE
+            (@DateRange = 'All'
+              OR (@DateRange = 'YTD'          AND YEAR(s.OrderDate) = YEAR(GETDATE()))
+              OR (@DateRange = 'LastQuarter'  AND s.OrderDate >= DATEADD(QUARTER,-1,DATETRUNC(QUARTER,GETDATE())))
+              OR (@DateRange = 'Last12Months' AND s.OrderDate >= DATEADD(MONTH,-12,GETDATE()))
+              OR (@DateRange = '2024'         AND YEAR(s.OrderDate) = 2024)
+              OR (@DateRange = '2023'         AND YEAR(s.OrderDate) = 2023)
+              OR (@DateRange = '2022'         AND YEAR(s.OrderDate) = 2022))
+            AND
+            (@RegionSegment = 'All'
+              OR s.Region      = @RegionSegment
+              OR c.Segment     = @RegionSegment)
+        </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="TotalRevenue">    <DataField>TotalRevenue</DataField>    <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="TotalOrders">     <DataField>TotalOrders</DataField>     <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="ProfitMargin">    <DataField>ProfitMargin</DataField>    <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="AvgOrderValue">   <DataField>AvgOrderValue</DataField>   <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="UniqueCustomers"> <DataField>UniqueCustomers</DataField> <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="AvgSatisfaction"> <DataField>AvgSatisfaction</DataField> <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="TopCustomerLTV">  <DataField>TopCustomerLTV</DataField>  <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="AvgDiscountRate"> <DataField>AvgDiscountRate</DataField> <rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+
+    <!-- DS 2: Quarterly revenue trend for chart -->
+    <DataSet Name="DS_QuarterlyRevenue">
+      <Query>
+        <DataSourceName>SalesViewPro</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@DateRange"><Value>=Parameters!DateRange.Value</Value></QueryParameter>
+          <QueryParameter Name="@RegionSegment"><Value>=Parameters!RegionSegment.Value</Value></QueryParameter>
+        </QueryParameters>
+        <CommandText>
+          SELECT
+            CAST(YEAR(s.OrderDate) AS VARCHAR) + ' Q' + CAST(DATEPART(QUARTER,s.OrderDate) AS VARCHAR) AS YearQuarter,
+            YEAR(s.OrderDate)           AS YearNum,
+            DATEPART(QUARTER,s.OrderDate) AS QuarterNum,
+            SUM(s.NetSaleAmount)        AS Revenue,
+            SUM(s.NetProfit)            AS Profit,
+            COUNT(DISTINCT s.OrderID)   AS Orders
+          FROM Sales s
+          INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+          WHERE
+            (@RegionSegment = 'All' OR s.Region = @RegionSegment OR c.Segment = @RegionSegment)
+          GROUP BY YEAR(s.OrderDate), DATEPART(QUARTER,s.OrderDate)
+          ORDER BY YEAR(s.OrderDate), DATEPART(QUARTER,s.OrderDate)
+        </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="YearQuarter"><DataField>YearQuarter</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="YearNum">    <DataField>YearNum</DataField>    <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="QuarterNum"> <DataField>QuarterNum</DataField> <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="Revenue">    <DataField>Revenue</DataField>    <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Profit">     <DataField>Profit</DataField>     <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Orders">     <DataField>Orders</DataField>     <rd:TypeName>System.Int32</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+
+    <!-- DS 3: Category performance -->
+    <DataSet Name="DS_CategoryPerformance">
+      <Query>
+        <DataSourceName>SalesViewPro</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@DateRange"><Value>=Parameters!DateRange.Value</Value></QueryParameter>
+          <QueryParameter Name="@RegionSegment"><Value>=Parameters!RegionSegment.Value</Value></QueryParameter>
+        </QueryParameters>
+        <CommandText>
+          SELECT
+            p.Category,
+            SUM(s.NetSaleAmount)                               AS Revenue,
+            SUM(s.UnitsSold)                                   AS UnitsSold,
+            ROUND(SUM(s.NetProfit)/NULLIF(SUM(s.NetSaleAmount),0)*100,1) AS ProfitMargin,
+            ROUND(AVG(s.DiscountPct)*100,1)                    AS AvgDiscount
+          FROM Sales s
+          INNER JOIN Products p  ON s.ProductID  = p.ProductID
+          INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+          WHERE
+            (@RegionSegment = 'All' OR s.Region = @RegionSegment OR c.Segment = @RegionSegment)
+          GROUP BY p.Category
+          ORDER BY Revenue DESC
+        </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Category">    <DataField>Category</DataField>    <rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Revenue">     <DataField>Revenue</DataField>     <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="UnitsSold">   <DataField>UnitsSold</DataField>   <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="ProfitMargin"><DataField>ProfitMargin</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="AvgDiscount"> <DataField>AvgDiscount</DataField> <rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+
+    <!-- DS 4: Regional performance -->
+    <DataSet Name="DS_RegionalPerformance">
+      <Query>
+        <DataSourceName>SalesViewPro</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@DateRange"><Value>=Parameters!DateRange.Value</Value></QueryParameter>
+          <QueryParameter Name="@RegionSegment"><Value>=Parameters!RegionSegment.Value</Value></QueryParameter>
+        </QueryParameters>
+        <CommandText>
+          SELECT
+            s.Region,
+            SUM(s.NetSaleAmount)             AS Revenue,
+            COUNT(DISTINCT s.OrderID)        AS Orders,
+            ROUND(SUM(s.NetSaleAmount)/SUM(SUM(s.NetSaleAmount)) OVER()*100,1) AS RevenueSharePct,
+            SUM(s.NetSaleAmount) - SUM(t.TargetAmount) AS VsTarget
+          FROM Sales s
+          LEFT JOIN Targets t ON s.Region = t.Region
+          INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+          WHERE
+            (@RegionSegment = 'All' OR s.Region = @RegionSegment OR c.Segment = @RegionSegment)
+          GROUP BY s.Region
+          ORDER BY Revenue DESC
+        </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Region">          <DataField>Region</DataField>          <rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Revenue">         <DataField>Revenue</DataField>         <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Orders">          <DataField>Orders</DataField>          <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="RevenueSharePct"> <DataField>RevenueSharePct</DataField> <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="VsTarget">        <DataField>VsTarget</DataField>        <rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+
+    <!-- DS 5: Customer segment analysis -->
+    <DataSet Name="DS_CustomerSegment">
+      <Query>
+        <DataSourceName>SalesViewPro</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@DateRange"><Value>=Parameters!DateRange.Value</Value></QueryParameter>
+          <QueryParameter Name="@RegionSegment"><Value>=Parameters!RegionSegment.Value</Value></QueryParameter>
+        </QueryParameters>
+        <CommandText>
+          SELECT
+            c.Segment,
+            SUM(s.NetSaleAmount)             AS Revenue,
+            COUNT(DISTINCT s.CustomerID)     AS CustomerCount,
+            ROUND(AVG(c.TotalRevenue),0)     AS AvgLTV,
+            ROUND(AVG(c.SatisfactionScore),1) AS AvgSatisfaction
+          FROM Sales s
+          INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+          WHERE
+            (@RegionSegment = 'All' OR s.Region = @RegionSegment OR c.Segment = @RegionSegment)
+          GROUP BY c.Segment
+          ORDER BY Revenue DESC
+        </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Segment">         <DataField>Segment</DataField>         <rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Revenue">         <DataField>Revenue</DataField>         <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="CustomerCount">   <DataField>CustomerCount</DataField>   <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="AvgLTV">          <DataField>AvgLTV</DataField>          <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="AvgSatisfaction"> <DataField>AvgSatisfaction</DataField> <rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+
+    <!-- DS 6: Budget vs Actual vs Target -->
+    <DataSet Name="DS_BudgetActual">
+      <Query>
+        <DataSourceName>SalesViewPro</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@DateRange"><Value>=Parameters!DateRange.Value</Value></QueryParameter>
+          <QueryParameter Name="@RegionSegment"><Value>=Parameters!RegionSegment.Value</Value></QueryParameter>
+        </QueryParameters>
+        <CommandText>
+          SELECT
+            p.Category,
+            SUM(t.BudgetAmount)              AS Budget,
+            SUM(t.TargetAmount)              AS Target,
+            SUM(s.NetSaleAmount)             AS Actual,
+            SUM(s.NetSaleAmount) - SUM(t.BudgetAmount) AS VsBudget,
+            SUM(s.NetSaleAmount) - SUM(t.TargetAmount) AS VsTarget,
+            ROUND((SUM(s.NetSaleAmount) - SUM(t.BudgetAmount))/NULLIF(SUM(t.BudgetAmount),0)*100,1) AS VsBudgetPct
+          FROM Sales s
+          INNER JOIN Products p  ON s.ProductID  = p.ProductID
+          INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+          LEFT  JOIN Targets t   ON p.Category   = t.Category
+          WHERE
+            (@RegionSegment = 'All' OR s.Region = @RegionSegment OR c.Segment = @RegionSegment)
+          GROUP BY p.Category
+          ORDER BY Actual DESC
+        </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Category">   <DataField>Category</DataField>   <rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Budget">     <DataField>Budget</DataField>     <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Target">     <DataField>Target</DataField>     <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Actual">     <DataField>Actual</DataField>     <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="VsBudget">   <DataField>VsBudget</DataField>   <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="VsTarget">   <DataField>VsTarget</DataField>   <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="VsBudgetPct"><DataField>VsBudgetPct</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+
+    <!-- DS 7: Top 5 customers -->
+    <DataSet Name="DS_TopCustomers">
+      <Query>
+        <DataSourceName>SalesViewPro</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@DateRange"><Value>=Parameters!DateRange.Value</Value></QueryParameter>
+          <QueryParameter Name="@RegionSegment"><Value>=Parameters!RegionSegment.Value</Value></QueryParameter>
+        </QueryParameters>
+        <CommandText>
+          SELECT TOP 5
+            ROW_NUMBER() OVER (ORDER BY SUM(s.NetSaleAmount) DESC) AS Rank,
+            c.CustomerName,
+            SUM(s.NetSaleAmount)   AS Revenue,
+            c.Segment,
+            c.SatisfactionScore    AS Satisfaction
+          FROM Sales s
+          INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+          WHERE
+            (@RegionSegment = 'All' OR s.Region = @RegionSegment OR c.Segment = @RegionSegment)
+          GROUP BY c.CustomerID, c.CustomerName, c.Segment, c.SatisfactionScore
+          ORDER BY SUM(s.NetSaleAmount) DESC
+        </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Rank">         <DataField>Rank</DataField>         <rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="CustomerName"> <DataField>CustomerName</DataField> <rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Revenue">      <DataField>Revenue</DataField>      <rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Segment">      <DataField>Segment</DataField>      <rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Satisfaction"> <DataField>Satisfaction</DataField> <rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+
+  </DataSets>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       REPORT SECTION — Page layout, header, footer, body
+  ═══════════════════════════════════════════════════════════════════ -->
+  <ReportSections>
+    <ReportSection>
+
+      <!-- ─── PAGE SETTINGS ─────────────────────────────────────────── -->
+      <Page>
+        <PageHeight>11in</PageHeight>
+        <PageWidth>8.5in</PageWidth>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>0.75in</TopMargin>
+        <BottomMargin>0.75in</BottomMargin>
+
+        <!-- PAGE HEADER: Company name | Report subtitle -->
+        <PageHeader>
+          <Height>0.5in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+
+            <!-- Left: Company brand -->
+            <Textbox Name="HDR_Brand">
+              <CanGrow>false</CanGrow>
+              <Top>0.05in</Top><Left>0in</Left><Width>3in</Width><Height>0.3in</Height>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>SalesView Pro  |  Enterprise Sales Analytics</Value>
+                      <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize>
+                             <FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                    </TextRun>
+                  </TextRuns>
+                </Paragraph>
+              </Paragraphs>
+              <Style><VerticalAlign>Middle</VerticalAlign></Style>
+            </Textbox>
+
+            <!-- Right: Dynamic subtitle — updates with parameter selection -->
+            <Textbox Name="HDR_Subtitle">
+              <CanGrow>false</CanGrow>
+              <Top>0.05in</Top><Left>3in</Left><Width>3.5in</Width><Height>0.3in</Height>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Switch(
+  Parameters!DateRange.Value="YTD",         "Year to Date",
+  Parameters!DateRange.Value="LastQuarter", "Last Quarter",
+  Parameters!DateRange.Value="Last12Months","Last 12 Months",
+  Parameters!DateRange.Value="2024",        "Full Year 2024",
+  Parameters!DateRange.Value="2023",        "Full Year 2023",
+  Parameters!DateRange.Value="2022",        "Full Year 2022",
+  True, Parameters!DateRange.Value
+) &amp; " — " &amp; Switch(
+  Parameters!RegionSegment.Value="All",        "All Regions / All Segments",
+  Parameters!RegionSegment.Value="South",      "South Region",
+  Parameters!RegionSegment.Value="East",       "East Region",
+  Parameters!RegionSegment.Value="West",       "West Region",
+  Parameters!RegionSegment.Value="North",      "North Region",
+  Parameters!RegionSegment.Value="Business",   "Business Segment",
+  Parameters!RegionSegment.Value="Consumer",   "Consumer Segment",
+  Parameters!RegionSegment.Value="Enterprise", "Enterprise Segment",
+  True, Parameters!RegionSegment.Value
+)</Value>
+                      <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize>
+                             <FontStyle>Italic</FontStyle><Color>#595959</Color></Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style><TextAlign>Right</TextAlign></Style>
+                </Paragraph>
+              </Paragraphs>
+              <Style><VerticalAlign>Middle</VerticalAlign></Style>
+            </Textbox>
+
+            <!-- Bottom border line -->
+            <Textbox Name="HDR_Line">
+              <CanGrow>false</CanGrow>
+              <Top>0.38in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.02in</Height>
+              <Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs>
+              <Style><BackgroundColor>#2E75B6</BackgroundColor></Style>
+            </Textbox>
+
+          </ReportItems>
+        </PageHeader>
+
+        <!-- PAGE FOOTER: Confidential | Page N of M | Copyright -->
+        <PageFooter>
+          <Height>0.4in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+
+            <!-- Top border line -->
+            <Textbox Name="FTR_Line">
+              <CanGrow>false</CanGrow>
+              <Top>0in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.02in</Height>
+              <Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs>
+              <Style><BackgroundColor>#2E75B6</BackgroundColor></Style>
+            </Textbox>
+
+            <!-- Left: Confidential notice -->
+            <Textbox Name="FTR_Confidential">
+              <CanGrow>false</CanGrow>
+              <Top>0.06in</Top><Left>0in</Left><Width>2.5in</Width><Height>0.25in</Height>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>CONFIDENTIAL — Authorized Recipients Only</Value>
+                      <Style><FontFamily>Arial</FontFamily><FontSize>7.5pt</FontSize>
+                             <FontStyle>Italic</FontStyle><Color>#595959</Color></Style>
+                    </TextRun>
+                  </TextRuns>
+                </Paragraph>
+              </Paragraphs>
+              <Style><VerticalAlign>Middle</VerticalAlign></Style>
+            </Textbox>
+
+            <!-- Center: Page N of M -->
+            <Textbox Name="FTR_PageNumber">
+              <CanGrow>false</CanGrow>
+              <Top>0.06in</Top><Left>2.5in</Left><Width>1.5in</Width><Height>0.25in</Height>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>="Page " &amp; Globals!PageNumber &amp; " of " &amp; Globals!TotalPages</Value>
+                      <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize>
+                             <FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style><TextAlign>Center</TextAlign></Style>
+                </Paragraph>
+              </Paragraphs>
+              <Style><VerticalAlign>Middle</VerticalAlign></Style>
+            </Textbox>
+
+            <!-- Right: Copyright -->
+            <Textbox Name="FTR_Copyright">
+              <CanGrow>false</CanGrow>
+              <Top>0.06in</Top><Left>4in</Left><Width>2.5in</Width><Height>0.25in</Height>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>="Generated: " &amp; Format(Now(),"dd MMM yyyy")</Value>
+                      <Style><FontFamily>Arial</FontFamily><FontSize>7.5pt</FontSize>
+                             <Color>#595959</Color></Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style><TextAlign>Right</TextAlign></Style>
+                </Paragraph>
+              </Paragraphs>
+              <Style><VerticalAlign>Middle</VerticalAlign></Style>
+            </Textbox>
+
+          </ReportItems>
+        </PageFooter>
+      </Page>
+
+      <!-- ─────────────────────────────────────────────────────────────
+           REPORT BODY
+           Width = 6.5in (8.5in page - 1in left - 1in right margin)
+      ──────────────────────────────────────────────────────────────── -->
+      <Body>
+        <Height>60in</Height>
+        <Width>6.5in</Width>
+
+        <ReportItems>
+
+          <!-- ══════════════════════════════════════════════════════
+               RECTANGLE 1 — COVER PAGE
+               PageBreakAfter forces all subsequent content to page 2
+          ══════════════════════════════════════════════════════ -->
+          <Rectangle Name="RECT_Cover">
+            <Top>0in</Top><Left>0in</Left><Width>6.5in</Width><Height>9in</Height>
+            <PageBreak><BreakLocation>After</BreakLocation></PageBreak>
+            <ReportItems>
+
+              <!-- Company banner -->
+              <Textbox Name="CVR_Banner">
+                <CanGrow>false</CanGrow>
+                <Top>0.3in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.9in</Height>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>SALESVIEW PRO</Value>
+                        <Style><FontFamily>Arial</FontFamily><FontSize>28pt</FontSize>
+                               <FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style><TextAlign>Center</TextAlign></Style>
+                  </Paragraph>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>Enterprise Sales Analytics Platform</Value>
+                        <Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize>
+                               <Color>#D6E4F0</Color></Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style><TextAlign>Center</TextAlign></Style>
+                  </Paragraph>
+                </Paragraphs>
+                <Style><BackgroundColor>#1E3A5F</BackgroundColor>
+                       <VerticalAlign>Middle</VerticalAlign>
+                       <PaddingTop>8pt</PaddingTop></Style>
+              </Textbox>
+
+              <!-- Report title -->
+              <Textbox Name="CVR_Title">
+                <CanGrow>false</CanGrow>
+                <Top>1.4in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.75in</Height>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>SALES PERFORMANCE REPORT</Value>
+                        <Style><FontFamily>Arial</FontFamily><FontSize>24pt</FontSize>
+                               <FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style><TextAlign>Center</TextAlign></Style>
+                  </Paragraph>
+                </Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign>
+                       <BorderStyle><Bottom>Solid</Bottom></BorderStyle>
+                       <BorderColor><Bottom>#F0A500</Bottom></BorderColor>
+                       <BorderWidth><Bottom>3pt</Bottom></BorderWidth></Style>
+              </Textbox>
+
+              <!-- Dynamic subtitle from parameters -->
+              <Textbox Name="CVR_ParamSubtitle">
+                <CanGrow>false</CanGrow>
+                <Top>2.25in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.4in</Height>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>="Reporting Period: " &amp; Switch(
+  Parameters!DateRange.Value="YTD","Year to Date",
+  Parameters!DateRange.Value="LastQuarter","Last Quarter",
+  Parameters!DateRange.Value="Last12Months","Last 12 Months",
+  Parameters!DateRange.Value="2024","Full Year 2024",
+  Parameters!DateRange.Value="2023","Full Year 2023",
+  Parameters!DateRange.Value="2022","Full Year 2022",
+  True, Parameters!DateRange.Value
+) &amp; "     |     Scope: " &amp; Switch(
+  Parameters!RegionSegment.Value="All","All Regions / All Segments",
+  Parameters!RegionSegment.Value="South","South Region",
+  Parameters!RegionSegment.Value="East","East Region",
+  Parameters!RegionSegment.Value="West","West Region",
+  Parameters!RegionSegment.Value="North","North Region",
+  Parameters!RegionSegment.Value="Business","Business Segment",
+  Parameters!RegionSegment.Value="Consumer","Consumer Segment",
+  Parameters!RegionSegment.Value="Enterprise","Enterprise Segment",
+  True, Parameters!RegionSegment.Value
+)</Value>
+                        <Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize>
+                               <FontStyle>Italic</FontStyle><Color>#2E75B6</Color></Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style><TextAlign>Center</TextAlign></Style>
+                  </Paragraph>
+                </Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign></Style>
+              </Textbox>
+
+              <!-- Metadata table -->
+              <Tablix Name="CVR_MetaTable">
+                <Top>2.9in</Top><Left>0.5in</Left><Width>5.5in</Width><Height>2.2in</Height>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>1.5in</Width></TablixColumn>
+                    <TablixColumn><Width>4in</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <!-- Row: Prepared For -->
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="M_L1"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>Prepared For:</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#D6E4F0</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                        <TablixCell><CellContents><Textbox Name="M_V1"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>Executive Leadership Committee</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#FFFFFF</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <!-- Row: Prepared By -->
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="M_L2"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>Prepared By:</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                        <TablixCell><CellContents><Textbox Name="M_V2"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>SalesView Pro Analytics Engine — Automated Distribution</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <!-- Row: Classification -->
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="M_L3"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>Classification:</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#D6E4F0</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                        <TablixCell><CellContents><Textbox Name="M_V3"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>CONFIDENTIAL — For Authorized Recipients Only</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#C0392B</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#FFFFFF</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <!-- Row: Date Issued -->
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="M_L4"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>Date Issued:</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                        <TablixCell><CellContents><Textbox Name="M_V4"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun>
+                          <Value>=Format(Now(),"dddd, dd MMMM yyyy")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#595959</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <!-- Row: Report Version -->
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="M_L5"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>Report Version:</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#D6E4F0</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                        <TablixCell><CellContents><Textbox Name="M_V5"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun>
+                          <Value>v2.1  |  SalesView Pro Analytics Engine  |  Q5 Paginated Report</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#FFFFFF</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>6pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents>
+                        </TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy>
+                  <TablixMembers><TablixMember/><TablixMember/></TablixMembers>
+                </TablixColumnHierarchy>
+                <TablixRowHierarchy>
+                  <TablixMembers>
+                    <TablixMember/><TablixMember/><TablixMember/><TablixMember/><TablixMember/>
+                  </TablixMembers>
+                </TablixRowHierarchy>
+              </Tablix>
+
+            </ReportItems>
+          </Rectangle>
+
+          <!-- ══════════════════════════════════════════════════════
+               RECTANGLE 2 — EXECUTIVE KPI SUMMARY (PAGE 2)
+          ══════════════════════════════════════════════════════ -->
+          <Rectangle Name="RECT_KPI">
+            <Top>9.1in</Top><Left>0in</Left><Width>6.5in</Width><Height>9in</Height>
+            <PageBreak><BreakLocation>After</BreakLocation></PageBreak>
+            <ReportItems>
+
+              <!-- Section heading -->
+              <Textbox Name="KPI_Heading">
+                <CanGrow>false</CanGrow>
+                <Top>0in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.4in</Height>
+                <Paragraphs><Paragraph><TextRuns><TextRun>
+                  <Value>Executive Summary — Key Performance Indicators</Value>
+                  <Style><FontFamily>Arial</FontFamily><FontSize>14pt</FontSize>
+                         <FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                </TextRun></TextRuns></Paragraph></Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign>
+                       <BorderStyle><Bottom>Solid</Bottom></BorderStyle>
+                       <BorderColor><Bottom>#2E75B6</Bottom></BorderColor>
+                       <BorderWidth><Bottom>2pt</Bottom></BorderWidth></Style>
+              </Textbox>
+
+              <!-- Dynamic period label -->
+              <Textbox Name="KPI_PeriodLabel">
+                <CanGrow>false</CanGrow>
+                <Top>0.5in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.25in</Height>
+                <Paragraphs><Paragraph><TextRuns><TextRun>
+                  <Value>="Current View: " &amp; Switch(
+  Parameters!DateRange.Value="YTD","Year to Date",
+  Parameters!DateRange.Value="LastQuarter","Last Quarter",
+  Parameters!DateRange.Value="Last12Months","Last 12 Months",
+  Parameters!DateRange.Value="2024","Full Year 2024",
+  Parameters!DateRange.Value="2023","Full Year 2023",
+  True, Parameters!DateRange.Value
+) &amp; "  /  " &amp; Switch(
+  Parameters!RegionSegment.Value="All","All Regions",
+  True, Parameters!RegionSegment.Value
+)</Value>
+                  <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize>
+                         <FontStyle>Italic</FontStyle><Color>#2E75B6</Color></Style>
+                </TextRun></TextRuns></Paragraph></Paragraphs>
+              </Textbox>
+
+              <!-- KPI metrics table — dataset driven -->
+              <Tablix Name="KPI_Table">
+                <DataSetName>DS_KPISummary</DataSetName>
+                <Top>0.85in</Top><Left>0in</Left><Width>6.5in</Width><Height>1in</Height>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>1.625in</Width></TablixColumn>
+                    <TablixColumn><Width>1.625in</Width></TablixColumn>
+                    <TablixColumn><Width>1.625in</Width></TablixColumn>
+                    <TablixColumn><Width>1.625in</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <!-- Row 1: Values -->
+                    <TablixRow>
+                      <Height>0.5in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="KV_Revenue"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(First(Fields!TotalRevenue.Value, "DS_KPISummary"),"$#,##0")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>18pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#D6E4F0</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="KV_Orders"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(First(Fields!TotalOrders.Value, "DS_KPISummary"),"#,##0")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>18pt</FontSize><FontWeight>Bold</FontWeight><Color>#2E75B6</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#D6E4F0</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="KV_Margin"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(First(Fields!ProfitMargin.Value, "DS_KPISummary"),"0.0") &amp; "%"</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>18pt</FontSize><FontWeight>Bold</FontWeight><Color>#1D7A4E</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#D6E4F0</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="KV_AOV"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(First(Fields!AvgOrderValue.Value, "DS_KPISummary"),"$#,##0")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>18pt</FontSize><FontWeight>Bold</FontWeight><Color>#F0A500</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#D6E4F0</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <!-- Row 2: Labels -->
+                    <TablixRow>
+                      <Height>0.3in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="KL_Revenue"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>Total Revenue</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize><Color>#595959</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="KL_Orders"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>Total Orders</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize><Color>#595959</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="KL_Margin"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>Profit Margin</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize><Color>#595959</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="KL_AOV"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>Avg Order Value</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize><Color>#595959</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#F2F2F2</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy>
+                  <TablixMembers><TablixMember/><TablixMember/><TablixMember/><TablixMember/></TablixMembers>
+                </TablixColumnHierarchy>
+                <TablixRowHierarchy>
+                  <TablixMembers><TablixMember/><TablixMember/></TablixMembers>
+                </TablixRowHierarchy>
+              </Tablix>
+
+              <!-- ── VISUALIZATION 1: Revenue Trend Chart (Line) ─── -->
+              <Textbox Name="CH_RevHeading">
+                <CanGrow>false</CanGrow>
+                <Top>2.1in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.35in</Height>
+                <Paragraphs><Paragraph><TextRuns><TextRun>
+                  <Value>Visualization 1 — Quarterly Revenue Trend</Value>
+                  <Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                </TextRun></TextRuns></Paragraph></Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign>
+                       <BorderStyle><Bottom>Solid</Bottom></BorderStyle>
+                       <BorderColor><Bottom>#2E75B6</Bottom></BorderColor>
+                       <BorderWidth><Bottom>1.5pt</Bottom></BorderWidth></Style>
+              </Textbox>
+
+              <Chart Name="CH_RevenueTrend">
+                <DataSetName>DS_QuarterlyRevenue</DataSetName>
+                <Top>2.55in</Top><Left>0in</Left><Width>6.5in</Width><Height>3in</Height>
+                <ChartSeriesCollection>
+                  <ChartSeries Name="Revenue">
+                    <ChartDataPoints>
+                      <ChartDataPoint>
+                        <ChartDataPointValues>
+                          <Y>=Fields!Revenue.Value</Y>
+                        </ChartDataPointValues>
+                        <Style>
+                          <Color>#2E75B6</Color>
+                        </Style>
+                      </ChartDataPoint>
+                    </ChartDataPoints>
+                    <ChartSeriesGroupings>
+                      <ChartSeriesGrouping>
+                        <ChartGroupExpressions>
+                          <ChartGroupExpression>=Fields!YearNum.Value</ChartGroupExpression>
+                        </ChartGroupExpressions>
+                        <Label>=Fields!YearNum.Value</Label>
+                      </ChartSeriesGrouping>
+                    </ChartSeriesGroupings>
+                    <Style>
+                      <BorderStyle><Default>Solid</Default></BorderStyle>
+                      <BorderColor><Default>#2E75B6</Default></BorderColor>
+                      <BorderWidth><Default>2pt</Default></BorderWidth>
+                    </Style>
+                    <Type>Line</Type>
+                    <ChartMarker>
+                      <MarkerType>Circle</MarkerType>
+                      <Size>6</Size>
+                      <Style><Color>#1E3A5F</Color></Style>
+                    </ChartMarker>
+                  </ChartSeries>
+                  <ChartSeries Name="Profit">
+                    <ChartDataPoints>
+                      <ChartDataPoint>
+                        <ChartDataPointValues>
+                          <Y>=Fields!Profit.Value</Y>
+                        </ChartDataPointValues>
+                      </ChartDataPoint>
+                    </ChartDataPoints>
+                    <ChartSeriesGroupings>
+                      <ChartSeriesGrouping>
+                        <ChartGroupExpressions>
+                          <ChartGroupExpression>=Fields!YearNum.Value</ChartGroupExpression>
+                        </ChartGroupExpressions>
+                        <Label>=Fields!YearNum.Value</Label>
+                      </ChartSeriesGrouping>
+                    </ChartSeriesGroupings>
+                    <Style>
+                      <BorderStyle><Default>Solid</Default></BorderStyle>
+                      <BorderColor><Default>#1D7A4E</Default></BorderColor>
+                      <BorderWidth><Default>2pt</Default></BorderWidth>
+                    </Style>
+                    <Type>Line</Type>
+                    <ChartMarker>
+                      <MarkerType>Diamond</MarkerType>
+                      <Size>6</Size>
+                      <Style><Color>#1D7A4E</Color></Style>
+                    </ChartMarker>
+                  </ChartSeries>
+                </ChartSeriesCollection>
+                <ChartCategoryHierarchy>
+                  <ChartMembers>
+                    <ChartMember>
+                      <Group Name="CatGroup">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!YearQuarter.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <Label>=Fields!YearQuarter.Value</Label>
+                    </ChartMember>
+                  </ChartMembers>
+                </ChartCategoryHierarchy>
+                <ChartAreas>
+                  <ChartArea Name="Default">
+                    <ChartCategoryAxes>
+                      <ChartAxis Name="CategoryAxis">
+                        <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize><Color>#595959</Color></Style>
+                        <Title>
+                          <Caption>Year / Quarter</Caption>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                        </Title>
+                      </ChartAxis>
+                    </ChartCategoryAxes>
+                    <ChartValueAxes>
+                      <ChartAxis Name="ValueAxis">
+                        <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize><Color>#595959</Color></Style>
+                        <Title>
+                          <Caption>Revenue / Profit ($)</Caption>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                        </Title>
+                      </ChartAxis>
+                    </ChartValueAxes>
+                    <Style>
+                      <BackgroundColor>#FFFFFF</BackgroundColor>
+                    </Style>
+                  </ChartArea>
+                </ChartAreas>
+                <ChartLegend Name="Legend">
+                  <Style><FontFamily>Arial</FontFamily><FontSize>8pt</FontSize></Style>
+                  <Position>TopRight</Position>
+                </ChartLegend>
+                <ChartTitles>
+                  <ChartTitle Name="MainTitle">
+                    <Caption>="Revenue &amp; Profit Trend by Quarter — " &amp; Switch(Parameters!DateRange.Value="YTD","YTD",Parameters!DateRange.Value="LastQuarter","Last Quarter",Parameters!DateRange.Value="Last12Months","Last 12 Months",True,Parameters!DateRange.Value)</Caption>
+                    <Style><FontFamily>Arial</FontFamily><FontSize>10pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                  </ChartTitle>
+                </ChartTitles>
+                <Style><BackgroundColor>#FFFFFF</BackgroundColor>
+                       <BorderStyle><Default>Solid</Default></BorderStyle>
+                       <BorderColor><Default>#CCCCCC</Default></BorderColor>
+                       <BorderWidth><Default>0.5pt</Default></BorderWidth></Style>
+              </Chart>
+
+            </ReportItems>
+          </Rectangle>
+
+          <!-- ══════════════════════════════════════════════════════
+               RECTANGLE 3 — VISUALIZATION 2: CATEGORY PERFORMANCE TABLE (PAGE 3)
+          ══════════════════════════════════════════════════════ -->
+          <Rectangle Name="RECT_Category">
+            <Top>18.2in</Top><Left>0in</Left><Width>6.5in</Width><Height>9in</Height>
+            <PageBreak><BreakLocation>After</BreakLocation></PageBreak>
+            <ReportItems>
+
+              <Textbox Name="CAT_Heading">
+                <CanGrow>false</CanGrow>
+                <Top>0in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.4in</Height>
+                <Paragraphs><Paragraph><TextRuns><TextRun>
+                  <Value>Visualization 2 — Product Category Performance Analysis</Value>
+                  <Style><FontFamily>Arial</FontFamily><FontSize>14pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                </TextRun></TextRuns></Paragraph></Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign>
+                       <BorderStyle><Bottom>Solid</Bottom></BorderStyle>
+                       <BorderColor><Bottom>#2E75B6</Bottom></BorderColor>
+                       <BorderWidth><Bottom>2pt</Bottom></BorderWidth></Style>
+              </Textbox>
+
+              <Tablix Name="CAT_Table">
+                <DataSetName>DS_CategoryPerformance</DataSetName>
+                <Top>0.6in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.5in</Height>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>1.5in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <!-- Header row -->
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="CH1"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Category</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CH2"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Revenue</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CH3"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Units Sold</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CH4"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Profit Margin</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CH5"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Avg Discount</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <!-- Detail row — repeats per category -->
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="CD1"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun>
+                          <Value>=Fields!Category.Value</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#000000</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("CAT_Table") Mod 2 = 0, "#F2F2F2", "#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>4pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CD2"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(Fields!Revenue.Value,"$#,##0")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("CAT_Table") Mod 2 = 0, "#F2F2F2", "#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CD3"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(Fields!UnitsSold.Value,"#,##0")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("CAT_Table") Mod 2 = 0, "#F2F2F2", "#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CD4"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(Fields!ProfitMargin.Value,"0.0") &amp; "%"</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1D7A4E</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("CAT_Table") Mod 2 = 0, "#F2F2F2", "#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="CD5"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=Format(Fields!AvgDiscount.Value,"0.0") &amp; "%"</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#595959</Color></Style>
+                          </TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("CAT_Table") Mod 2 = 0, "#F2F2F2", "#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth>
+                          </Style></Textbox></CellContents></TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy>
+                  <TablixMembers><TablixMember/><TablixMember/><TablixMember/><TablixMember/><TablixMember/></TablixMembers>
+                </TablixColumnHierarchy>
+                <TablixRowHierarchy>
+                  <TablixMembers>
+                    <TablixMember><KeepWithGroup>After</KeepWithGroup><RepeatOnNewPage>true</RepeatOnNewPage><KeepTogether>true</KeepTogether></TablixMember>
+                    <TablixMember>
+                      <Group Name="CategoryGroup">
+                        <GroupExpressions><GroupExpression>=Fields!Category.Value</GroupExpression></GroupExpressions>
+                      </Group>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixRowHierarchy>
+              </Tablix>
+
+              <!-- ── VISUALIZATION 3: Regional Performance Table ── -->
+              <Textbox Name="REG_Heading">
+                <CanGrow>false</CanGrow>
+                <Top>2.5in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.4in</Height>
+                <Paragraphs><Paragraph><TextRuns><TextRun>
+                  <Value>Visualization 3 — Regional Performance Analysis</Value>
+                  <Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                </TextRun></TextRuns></Paragraph></Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign>
+                       <BorderStyle><Bottom>Solid</Bottom></BorderStyle>
+                       <BorderColor><Bottom>#2E75B6</Bottom></BorderColor>
+                       <BorderWidth><Bottom>1.5pt</Bottom></BorderWidth></Style>
+              </Textbox>
+
+              <Tablix Name="REG_Table">
+                <DataSetName>DS_RegionalPerformance</DataSetName>
+                <Top>3.0in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.5in</Height>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>1.5in</Width></TablixColumn>
+                    <TablixColumn><Width>1.5in</Width></TablixColumn>
+                    <TablixColumn><Width>1.0in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="RH1"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Region</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RH2"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Revenue</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RH3"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Orders</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RH4"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Revenue Share</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RH5"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>vs Target</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <TablixRow>
+                      <Height>0.35in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="RD1"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Region.Value</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("REG_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>4pt</PaddingLeft>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RD2"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!Revenue.Value,"$#,##0")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("REG_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RD3"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!Orders.Value,"#,##0")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("REG_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RD4"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!RevenueSharePct.Value,"0.0") &amp; "%"</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#2E75B6</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("REG_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="RD5"><CanGrow>false</CanGrow>
+                          <Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                          <Value>=IIf(Fields!VsTarget.Value &gt;= 0, "+" &amp; Format(Fields!VsTarget.Value,"$#,##0") &amp; " ▲", Format(Fields!VsTarget.Value,"$#,##0") &amp; " ▼")</Value>
+                          <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight>
+                          <Color>=IIf(Fields!VsTarget.Value &gt;= 0,"#1D7A4E","#C0392B")</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs>
+                          <Style><BackgroundColor>=IIf(RowNumber("REG_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign>
+                          <BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy>
+                  <TablixMembers><TablixMember/><TablixMember/><TablixMember/><TablixMember/><TablixMember/></TablixMembers>
+                </TablixColumnHierarchy>
+                <TablixRowHierarchy>
+                  <TablixMembers>
+                    <TablixMember><KeepWithGroup>After</KeepWithGroup><RepeatOnNewPage>true</RepeatOnNewPage></TablixMember>
+                    <TablixMember><Group Name="RegionGroup"><GroupExpressions><GroupExpression>=Fields!Region.Value</GroupExpression></GroupExpressions></Group></TablixMember>
+                  </TablixMembers>
+                </TablixRowHierarchy>
+              </Tablix>
+
+            </ReportItems>
+          </Rectangle>
+
+          <!-- ══════════════════════════════════════════════════════
+               RECTANGLE 4 — CUSTOMER + BUDGET ANALYSIS (PAGE 4)
+          ══════════════════════════════════════════════════════ -->
+          <Rectangle Name="RECT_CustomerBudget">
+            <Top>27.3in</Top><Left>0in</Left><Width>6.5in</Width><Height>9in</Height>
+            <PageBreak><BreakLocation>After</BreakLocation></PageBreak>
+            <ReportItems>
+
+              <!-- Section heading -->
+              <Textbox Name="CUST_Heading">
+                <CanGrow>false</CanGrow>
+                <Top>0in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.4in</Height>
+                <Paragraphs><Paragraph><TextRuns><TextRun>
+                  <Value>Visualization 4 — Customer Segment Analysis &amp; Top Customers</Value>
+                  <Style><FontFamily>Arial</FontFamily><FontSize>14pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                </TextRun></TextRuns></Paragraph></Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign>
+                       <BorderStyle><Bottom>Solid</Bottom></BorderStyle>
+                       <BorderColor><Bottom>#2E75B6</Bottom></BorderColor>
+                       <BorderWidth><Bottom>2pt</Bottom></BorderWidth></Style>
+              </Textbox>
+
+              <!-- Customer segment table -->
+              <Tablix Name="CUST_SegTable">
+                <DataSetName>DS_CustomerSegment</DataSetName>
+                <Top>0.6in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.5in</Height>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>1.5in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                    <TablixColumn><Width>1.25in</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow><Height>0.35in</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="SH1"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Segment</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SH2"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Revenue</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SH3"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Customers</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SH4"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Avg LTV</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SH5"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Satisfaction</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                    <TablixRow><Height>0.35in</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="SD1"><CanGrow>false</CanGrow><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Segment.Value</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("CUST_SegTable") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>4pt</PaddingLeft><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SD2"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!Revenue.Value,"$#,##0")</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("CUST_SegTable") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SD3"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!CustomerCount.Value,"#,##0")</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("CUST_SegTable") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SD4"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!AvgLTV.Value,"$#,##0")</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("CUST_SegTable") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="SD5"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!AvgSatisfaction.Value,"0.0") &amp; " / 5"</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>=IIf(Fields!AvgSatisfaction.Value &gt;= 3.5,"#1D7A4E",IIf(Fields!AvgSatisfaction.Value &lt; 3.0,"#C0392B","#F0A500"))</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("CUST_SegTable") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy><TablixMembers><TablixMember/><TablixMember/><TablixMember/><TablixMember/><TablixMember/></TablixMembers></TablixColumnHierarchy>
+                <TablixRowHierarchy><TablixMembers>
+                  <TablixMember><KeepWithGroup>After</KeepWithGroup><RepeatOnNewPage>true</RepeatOnNewPage></TablixMember>
+                  <TablixMember><Group Name="SegGroup"><GroupExpressions><GroupExpression>=Fields!Segment.Value</GroupExpression></GroupExpressions></Group></TablixMember>
+                </TablixMembers></TablixRowHierarchy>
+              </Tablix>
+
+              <!-- ── VISUALIZATION 5: Budget vs Actual Table ─── -->
+              <Textbox Name="BUD_Heading">
+                <CanGrow>false</CanGrow>
+                <Top>2.3in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.4in</Height>
+                <Paragraphs><Paragraph><TextRuns><TextRun>
+                  <Value>Visualization 5 — Budget vs. Target vs. Actual Analysis</Value>
+                  <Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style>
+                </TextRun></TextRuns></Paragraph></Paragraphs>
+                <Style><VerticalAlign>Middle</VerticalAlign>
+                       <BorderStyle><Bottom>Solid</Bottom></BorderStyle>
+                       <BorderColor><Bottom>#2E75B6</Bottom></BorderColor>
+                       <BorderWidth><Bottom>1.5pt</Bottom></BorderWidth></Style>
+              </Textbox>
+
+              <Tablix Name="BUD_Table">
+                <DataSetName>DS_BudgetActual</DataSetName>
+                <Top>2.85in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.5in</Height>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>1.3in</Width></TablixColumn>
+                    <TablixColumn><Width>1.1in</Width></TablixColumn>
+                    <TablixColumn><Width>1.1in</Width></TablixColumn>
+                    <TablixColumn><Width>1.1in</Width></TablixColumn>
+                    <TablixColumn><Width>1.0in</Width></TablixColumn>
+                    <TablixColumn><Width>0.9in</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow><Height>0.35in</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="BH1"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Category</Value><Style><FontFamily>Arial</FontFamily><FontSize>8.5pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BH2"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Budget</Value><Style><FontFamily>Arial</FontFamily><FontSize>8.5pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BH3"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Target</Value><Style><FontFamily>Arial</FontFamily><FontSize>8.5pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BH4"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>Actual</Value><Style><FontFamily>Arial</FontFamily><FontSize>8.5pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BH5"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>vs Budget</Value><Style><FontFamily>Arial</FontFamily><FontSize>8.5pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BH6"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>vs Target</Value><Style><FontFamily>Arial</FontFamily><FontSize>8.5pt</FontSize><FontWeight>Bold</FontWeight><Color>#FFFFFF</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>#1E3A5F</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                    <TablixRow><Height>0.35in</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="BD1"><CanGrow>false</CanGrow><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Category.Value</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("BUD_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><PaddingLeft>4pt</PaddingLeft><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BD2"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!Budget.Value,"$#,##0")</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("BUD_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BD3"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!Target.Value,"$#,##0")</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><Color>#000000</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("BUD_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BD4"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun><Value>=Format(Fields!Actual.Value,"$#,##0")</Value><Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>#1E3A5F</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("BUD_Table") Mod 2=0,"#D6E4F0","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BD5"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                        <Value>=IIf(Fields!VsBudget.Value &gt;= 0,"+" &amp; Format(Fields!VsBudget.Value,"$#,##0") &amp; " ▲",Format(Fields!VsBudget.Value,"$#,##0") &amp; " ▼")</Value>
+                        <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>=IIf(Fields!VsBudget.Value &gt;= 0,"#1D7A4E","#C0392B")</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("BUD_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="BD6"><CanGrow>false</CanGrow><Paragraphs><Paragraph><Style><TextAlign>Center</TextAlign></Style><TextRuns><TextRun>
+                        <Value>=IIf(Fields!VsTarget.Value &gt;= 0,"+" &amp; Format(Fields!VsTarget.Value,"$#,##0") &amp; " ▲",Format(Fields!VsTarget.Value,"$#,##0") &amp; " ▼")</Value>
+                        <Style><FontFamily>Arial</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>=IIf(Fields!VsTarget.Value &gt;= 0,"#1D7A4E","#C0392B")</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>=IIf(RowNumber("BUD_Table") Mod 2=0,"#F2F2F2","#FFFFFF")</BackgroundColor><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#CCCCCC</Default></BorderColor><BorderWidth><Default>0.5pt</Default></BorderWidth></Style></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy><TablixMembers><TablixMember/><TablixMember/><TablixMember/><TablixMember/><TablixMember/><TablixMember/></TablixMembers></TablixColumnHierarchy>
+                <TablixRowHierarchy><TablixMembers>
+                  <TablixMember><KeepWithGroup>After</KeepWithGroup><RepeatOnNewPage>true</RepeatOnNewPage></TablixMember>
+                  <TablixMember><Group Name="BudCatGroup"><GroupExpressions><GroupExpression>=Fields!Category.Value</GroupExpression></GroupExpressions></Group></TablixMember>
+                </TablixMembers></TablixRowHierarchy>
+              </Tablix>
+
+            </ReportItems>
+          </Rectangle>
+
+        </ReportItems>
+      </Body>
+
+      <Width>6.5in</Width>
+
+    </ReportSection>
+  </ReportSections>
+
+  <rd:ReportID>q5-salesviewpro-paginated-report-2024</rd:ReportID>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+
+</Report>
